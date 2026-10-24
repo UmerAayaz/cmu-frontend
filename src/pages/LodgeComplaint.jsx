@@ -417,7 +417,7 @@ export default function LodgeComplaint() {
           <h3 style={{ fontSize: '12px', color: '#9ca3af', letterSpacing: '1px', marginBottom: '24px', fontWeight: 600 }}>CASE TIMER</h3>
           
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
-            <div className="timer-circle" style={{ width: '50px', height: '50px', borderWidth: '6px' }}></div>
+            <div className="timer-circle" style={{ width: '50px', height: '50px', borderWidth: '0px' }}>0</div>
             <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '12px' }}>Working Days</p>
           </div>
 
