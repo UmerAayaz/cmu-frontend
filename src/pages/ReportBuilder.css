@@ -25,3 +25,55 @@
 .canvas-dropzone { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: flex-start; min-height: 400px; }
 .canvas-pill { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; font-size: 13px; color: var(--primary-red); font-weight: 500; }
 .canvas-pill svg { cursor: pointer; }
+
+/* ================= Drag & Drop Improvements ================= */
+.draggable-field {
+  /* Thoda sa highlight taaki pata chale drag ho sakta hai */
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+.draggable-field:hover {
+  border-color: var(--primary-red);
+  background: #fef2f2;
+  color: var(--primary-red);
+}
+.draggable-field:active {
+  opacity: 0.5;
+}
+
+.canvas-dropzone {
+  transition: background-color 0.2s;
+}
+/* Jab field drop ho rahi ho toh dropzone ka background change ho */
+.canvas-dropzone:hover {
+  background-color: #f9fafb;
+}
+
+/* ================= Operators Section ================= */
+.operators-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.operator-btn {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.operator-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: var(--primary-red);
+}
