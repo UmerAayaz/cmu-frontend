@@ -1,0 +1,13 @@
+.rca-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+.rca-card { background: white; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.rca-header { padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); }
+.rca-badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.badge-blue { background: #eff6ff; color: #2563eb; }
+.badge-green { background: #f0fdf4; color: #16a34a; }
+.badge-yellow { background: #fefce8; color: #ca8a04; }
+.rca-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+.rca-tags { display: flex; flex-wrap: wrap; gap: 8px; min-height: 32px; }
+.rca-tag { display: inline-flex; align-items: center; gap: 6px; background: #f9fafb; border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 4px; font-size: 13px; color: var(--text-main); font-weight: 500; }
+.rca-input-group { display: flex; gap: 8px; align-items: center; }
+.rca-input-group input { flex: 1; }
+.rca-warning-banner { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 16px; border-radius: 8px; font-size: 13px; line-height: 1.5; }

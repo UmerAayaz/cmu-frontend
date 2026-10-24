@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --primary-red: #d82c2c;
+  --primary-red-light: #fce8e8;
+  --bg-color: #f4f5f7;
+  --sidebar-bg: #ffffff;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  --header-bg: #ffffff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+}
+
+/* App Layout */
+.app-container { display: flex; min-height: 100vh; width: 100vw; }
+.main-content { flex: 1; display: flex; flex-direction: column; }
+.page-wrapper { padding: 24px; flex: 1; overflow-y: auto; }
+
+/* Typography & Common */
+.page-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.page-subtitle { font-size: 13px; color: var(--text-muted); }
+.card { background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; }
+.btn-primary { background-color: var(--primary-red); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; }
+.btn-outline { padding: 10px 16px; background: white; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-main); cursor: pointer; }
+.input-label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+.section-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 12px; text-transform: uppercase; }
+
+/* Form Elements */
+input[type="text"], select, textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; outline: none; color: var(--text-main);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--primary-red); }

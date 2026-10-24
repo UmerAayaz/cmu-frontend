@@ -1,0 +1,24 @@
+.mc-tab { padding: 8px 16px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--text-muted); border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.mc-tab.active { background: var(--primary-red); color: white; }
+.mc-tab:not(.active) { background: transparent; color: var(--text-muted); }
+.mc-tab .badge-count { background: rgba(255,255,255,0.2); }
+.mc-tab:not(.active) .badge-count { background: #e5e7eb; color: #6b7280; }
+
+.rca-toggle-btn { flex: 1; padding: 10px; border: 1px solid var(--border-color); background: #f9fafb; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text-main); }
+.rca-toggle-btn.active-customer { background: #f0fdf4; border-color: #86efac; color: #166534; }
+.rca-toggle-btn.active-bank { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+.rca-toggle-btn-small { padding: 8px 24px; border: 1px solid var(--border-color); background: #f9fafb; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-main); }
+.rca-toggle-btn-small.active { background: #f3f4f6; border-color: #9ca3af; font-weight: 600; }
+
+.timeline-container { display: flex; flex-direction: column; position: relative; }
+.timeline-container::before { content: ''; position: absolute; top: 0; bottom: 0; left: 15px; width: 1px; background: var(--border-color); z-index: 0; }
+.timeline-item { display: flex; gap: 16px; margin-bottom: 20px; position: relative; z-index: 1; }
+.timeline-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: white; border: 1px solid var(--border-color); }
+.timeline-icon.lodged { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+.timeline-icon.sms { background: #f0fdf4; border-color: #bbf7d0; color: #16a34a; }
+.timeline-icon.email { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+.timeline-icon.letter { background: #fef9c3; border-color: #fde047; color: #ca8a04; }
+.timeline-icon.status { background: #f3e8ff; border-color: #d8b4fe; color: #9333ea; }
+.timeline-icon.comment { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+.timeline-icon.route { background: #fef3c7; border-color: #fcd34d; color: #b45309; }
+.timeline-content { flex: 1; background: #f9fafb; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 16px; }

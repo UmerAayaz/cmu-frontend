@@ -1,0 +1,20 @@
+
+.tabs-container { display: flex; align-items: center; gap: 8px; background: white; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px; flex-wrap: wrap; }
+.tab { padding: 6px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: white; font-size: 12px; color: var(--text-main); cursor: pointer; font-weight: 500; }
+.tab.active { background: var(--primary-red); color: white; border-color: var(--primary-red); }
+.info-banner { display: flex; gap: 12px; background: #f9fafb; border: 1px solid var(--border-color); padding: 16px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; }
+
+.btn-toggle { padding: 10px; border: 1px solid var(--border-color); background: #f3f4f6; border-radius: 6px; color: var(--text-muted); font-weight: 500; cursor: pointer; flex: 1; transition: 0.2s; }
+.btn-toggle.active { background: var(--primary-red); color: white; border-color: var(--primary-red); }
+
+.field-table-header { display: flex; padding: 12px 16px; background: #f9fafb; font-size: 12px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); border-top: 1px solid var(--border-color); }
+.field-row { padding: 16px 0; border-bottom: 1px solid var(--border-color); }
+.field-main { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 0 16px; }
+.field-rules { background: #f9fafb; padding: 16px; border-radius: 6px; border: 1px solid var(--border-color); margin: 0 16px; }
+.rules-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+.toggle { width: 36px; height: 20px; background: #d1d5db; border-radius: 10px; position: relative; cursor: pointer; transition: 0.2s; }
+.toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: all 0.2s; }
+.toggle.active { background: var(--primary-red); }
+.toggle.active::after { left: 18px; }
+.pill { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 20px; font-size: 13px; }
