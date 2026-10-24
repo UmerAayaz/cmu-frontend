@@ -1,79 +1,279 @@
-.btn-sm { padding: 6px 12px; background: white; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; font-weight: 500; color: var(--text-main); cursor: pointer; transition: 0.2s; }
-.btn-sm:hover { background: #f3f4f6; }
-.btn-back { display: flex; align-items: center; gap: 4px; background: none; border: none; font-size: 14px; color: var(--text-main); cursor: pointer; font-weight: 500; }
+/* ================= General & Layout ================= */
+.btn-back { 
+  display: flex; 
+  align-items: center; 
+  gap: 4px; 
+  background: none; 
+  border: none; 
+  font-size: 14px; 
+  color: var(--text-main); 
+  cursor: pointer; 
+  font-weight: 500; 
+}
+.btn-back:hover { color: var(--primary-red); }
 
-.report-table { background: white; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
-.report-table-header { display: flex; padding: 14px 20px; background: #f9fafb; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color); letter-spacing: 0.5px; }
-.report-table-row { display: flex; padding: 16px 20px; align-items: center; border-bottom: 1px solid var(--border-color); }
-.report-table-row:last-child { border-bottom: none; }
-
-.status-badge { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-.status-badge.deployed { background: #dcfce7; color: #166534; }
-.status-badge.draft { background: #fef3c7; color: #92400e; }
-
-.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal-content { background: white; border-radius: 12px; padding: 24px; width: 500px; max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-
-.builder-sidebar { width: 280px; background: white; border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; }
-.draggable-field { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f9fafb; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; color: var(--text-main); cursor: grab; user-select: none; }
-.draggable-field:active { cursor: grabbing; }
-
-.canvas-container { flex: 1; background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; overflow-x: auto; }
-.canvas-columns { display: flex; gap: 16px; min-width: 800px; height: 100%; }
-.canvas-column { flex: 1; background: #f9fafb; border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; }
-.canvas-header { padding: 12px; display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--primary-red); border-bottom: 1px solid var(--border-color); background: white; border-radius: 6px 6px 0 0; }
-.canvas-dropzone { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: flex-start; min-height: 400px; }
-.canvas-pill { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; font-size: 13px; color: var(--primary-red); font-weight: 500; }
-.canvas-pill svg { cursor: pointer; }
-
-/* ================= Drag & Drop Improvements ================= */
-.draggable-field {
-  /* Thoda sa highlight taaki pata chale drag ho sakta hai */
-  border: 1px solid var(--border-color);
+.btn-outline { 
+  padding: 10px 16px; 
+  background: white; 
+  border: 1px solid var(--border-color); 
+  border-radius: 6px; 
+  font-size: 13px; 
+  font-weight: 500; 
+  color: var(--text-main); 
+  cursor: pointer; 
   transition: all 0.2s;
 }
-.draggable-field:hover {
-  border-color: var(--primary-red);
-  background: #fef2f2;
-  color: var(--primary-red);
+.btn-outline:hover { background: #f9fafb; }
+
+.btn-primary { 
+  padding: 10px 16px; 
+  background: var(--primary-red); 
+  border: none; 
+  border-radius: 6px; 
+  font-size: 13px; 
+  font-weight: 500; 
+  color: white; 
+  cursor: pointer; 
+  transition: all 0.2s;
 }
-.draggable-field:active {
-  opacity: 0.5;
+.btn-primary:hover { background: #b91c1c; }
+
+/* ================= List View Table ================= */
+.report-table {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 24px;
 }
 
-.canvas-dropzone {
-  transition: background-color 0.2s;
-}
-/* Jab field drop ho rahi ho toh dropzone ka background change ho */
-.canvas-dropzone:hover {
-  background-color: #f9fafb;
-}
-
-/* ================= Operators Section ================= */
-.operators-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-top: 12px;
+.report-table-header {
+  display: flex;
+  padding: 14px 20px;
+  background: #f9fafb;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  letter-spacing: 0.5px;
 }
 
-.operator-btn {
+.report-table-row {
+  display: flex;
+  padding: 16px 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+.report-table-row:hover { background: #f9fafb; }
+.report-table-row:last-child { border-bottom: none; }
+
+.btn-sm {
+  padding: 6px 12px;
   background: white;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  padding: 8px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-main);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: 0.2s;
+}
+.btn-sm:hover { background: #f3f4f6; }
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status-badge.deployed { background: #dcfce7; color: #166534; }
+.status-badge.draft { background: #fef3c7; color: #92400e; }
+
+/* ================= Left Sidebar (Fixed) ================= */
+.builder-sidebar {
+  width: 280px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  flex-shrink: 0; /* Sidebar fixed rahega */
 }
 
-.operator-btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  color: var(--primary-red);
+.search-box { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-color); background: white; }
+.search-box input { border: none; background: transparent; padding: 0; }
+.search-box input:focus { outline: none; }
+
+.section-label { 
+  font-size: 11px; 
+  font-weight: 600; 
+  color: var(--text-muted); 
+  letter-spacing: 0.5px; 
+  text-transform: uppercase; 
 }
+
+.draggable-field { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  padding: 10px 12px; 
+  background: #f9fafb; 
+  border: 1px solid var(--border-color); 
+  border-radius: 6px; 
+  font-size: 13px; 
+  color: var(--text-main); 
+  cursor: grab; 
+  user-select: none; 
+  transition: all 0.2s; 
+}
+.draggable-field:hover { border-color: var(--primary-red); background: #fef2f2; color: var(--primary-red); }
+.draggable-field:active { cursor: grabbing; opacity: 0.6; }
+
+.operators-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.operator-btn { background: white; border: 1px solid var(--border-color); border-radius: 4px; padding: 8px; font-size: 15px; font-weight: 600; color: var(--text-main); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.operator-btn:hover { background: #f3f4f6; border-color: #9ca3af; color: var(--primary-red); }
+
+/* ================= Right Canvas (Horizontal Scroll) ================= */
+.canvas-container {
+  flex: 1;
+  
+  /* SCROLLBAR LAANE KE LIYE YEH 2 LINES SABSE IMPORTANT HAIN */
+  width: 0;       
+  min-width: 0;   
+
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  padding-bottom: 24px; /* Scrollbar ke liye thodi jagah */
+  
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: nowrap; /* Columns ek hi line mein rahenge */
+  
+  overflow-x: auto; /* Horizontal Scroll */
+  overflow-y: hidden;
+}
+
+/* Custom Scrollbar Styling */
+.canvas-container::-webkit-scrollbar {
+  height: 10px; /* Scrollbar ki motai */
+}
+.canvas-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+.canvas-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 5px;
+}
+.canvas-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Individual Columns */
+.canvas-column {
+  width: 300px;      
+  min-width: 300px;  
+  flex-shrink: 0;    /* Squeeze hone se rokta hai */
+  
+  background: #f9fafb;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  
+  /* Height ko screen ke hisaab se set kiya */
+  height: calc(100vh - 280px); 
+  max-height: 600px;
+}
+
+.canvas-header { 
+  padding: 12px; 
+  display: flex; 
+  justify-content: space-between; 
+  font-size: 13px; 
+  font-weight: 600; 
+  color: var(--primary-red); 
+  border-bottom: 1px solid var(--border-color); 
+  background: white; 
+  border-radius: 6px 6px 0 0; 
+  flex-shrink: 0; 
+}
+
+.canvas-dropzone {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-y: auto; /* Agar rows zyada hon toh column ke andar Y-scroll aaye */
+}
+.canvas-dropzone.has-field { align-items: stretch; background: white; }
+
+.canvas-pill { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  width: 100%; 
+  padding: 8px 12px; 
+  background: #fef2f2; 
+  border: 1px solid #fecaca; 
+  border-radius: 4px; 
+  font-size: 13px; 
+  color: var(--primary-red); 
+  font-weight: 500; 
+  flex-shrink: 0; 
+}
+.canvas-pill svg { cursor: pointer; }
+
+.dummy-row { 
+  width: 100%; 
+  padding: 12px 8px; 
+  font-size: 12px; 
+  color: #d1d5db; 
+  font-family: monospace; 
+  border-bottom: 1px solid #f3f4f6; 
+  text-align: left; 
+  flex-shrink: 0; 
+}
+
+/* Add Column Button */
+.add-column-wrapper { 
+  display: flex; 
+  align-items: flex-start; 
+  justify-content: center; 
+  padding-top: 10px; 
+  padding-right: 10px; 
+  flex-shrink: 0; 
+}
+
+.add-column-btn { 
+  background: white; 
+  border: 1px solid var(--border-color); 
+  border-radius: 50%; 
+  width: 40px; 
+  height: 40px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  cursor: pointer; 
+  color: #6b7280; 
+  transition: all 0.2s; 
+}
+.add-column-btn:hover { 
+  background: #f3f4f6; 
+  color: var(--primary-red); 
+  border-color: var(--primary-red); 
+}
+
+/* Modal */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: white; border-radius: 12px; padding: 24px; width: 500px; max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.avatar-circle { border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+.avatar-circle.red { background: var(--primary-red); }
