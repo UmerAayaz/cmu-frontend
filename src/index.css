@@ -43,3 +43,114 @@ input[type="text"], select, textarea {
 }
 input:focus, select:focus, textarea:focus { border-color: var(--primary-red); }
 
+
+/* ═══════════════════════════════════════════════════════
+   PER-PROJECT THEME SYSTEM
+   Existing CSS vars ko override karta hai — Sidebar.css
+   aur baaki files mein kuch change nahi karna
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── Default: Red (CMU) ─── */
+:root,
+[data-project-theme="red"] {
+  --primary-red:       #DC2626;
+  --primary-red-light: #FEE2E2;
+  --primary-red-dark:  #991B1B;
+  --bg-color:          #FEF2F2;
+  --theme-primary:     #DC2626;
+  --theme-primary-light: #FEE2E2;
+  --theme-primary-rgb: 220, 38, 38;
+  --theme-bg:          #FEF2F2;
+}
+
+/* ─── Blue ─── */
+[data-project-theme="blue"] {
+  --primary-red:       #1E40AF;
+  --primary-red-light: #DBEAFE;
+  --primary-red-dark:  #1E3A8A;
+  --bg-color:          #EFF6FF;
+  --theme-primary:     #1E40AF;
+  --theme-primary-light: #DBEAFE;
+  --theme-primary-rgb: 30, 64, 175;
+  --theme-bg:          #EFF6FF;
+}
+
+/* ─── Purple ─── */
+[data-project-theme="purple"] {
+  --primary-red:       #7C3AED;
+  --primary-red-light: #EDE9FE;
+  --primary-red-dark:  #5B21B6;
+  --bg-color:          #FAF5FF;
+  --theme-primary:     #7C3AED;
+  --theme-primary-light: #EDE9FE;
+  --theme-primary-rgb: 124, 58, 237;
+  --theme-bg:          #FAF5FF;
+}
+
+/* ─── Teal ─── */
+[data-project-theme="teal"] {
+  --primary-red:       #0F766E;
+  --primary-red-light: #CCFBF1;
+  --primary-red-dark:  #115E59;
+  --bg-color:          #F0FDFA;
+  --theme-primary:     #0F766E;
+  --theme-primary-light: #CCFBF1;
+  --theme-primary-rgb: 15, 118, 110;
+  --theme-bg:          #F0FDFA;
+}
+
+/* ─── Amber ─── */
+[data-project-theme="amber"] {
+  --primary-red:       #D97706;
+  --primary-red-light: #FEF3C7;
+  --primary-red-dark:  #92400E;
+  --bg-color:          #FFFBEB;
+  --theme-primary:     #D97706;
+  --theme-primary-light: #FEF3C7;
+  --theme-primary-rgb: 217, 119, 6;
+  --theme-bg:          #FFFBEB;
+}
+
+/* ─── Emerald ─── */
+[data-project-theme="emerald"] {
+  --primary-red:       #059669;
+  --primary-red-light: #D1FAE5;
+  --primary-red-dark:  #065F46;
+  --bg-color:          #ECFDF5;
+  --theme-primary:     #059669;
+  --theme-primary-light: #D1FAE5;
+  --theme-primary-rgb: 5, 150, 105;
+  --theme-bg:          #ECFDF5;
+}
+
+/* ─── Rose ─── */
+[data-project-theme="rose"] {
+  --primary-red:       #E11D48;
+  --primary-red-light: #FFE4E6;
+  --primary-red-dark:  #9F1239;
+  --bg-color:          #FFF1F2;
+  --theme-primary:     #E11D48;
+  --theme-primary-light: #FFE4E6;
+  --theme-primary-rgb: 225, 29, 72;
+  --theme-bg:          #FFF1F2;
+}
+
+/* ─── Slate ─── */
+[data-project-theme="slate"] {
+  --primary-red:       #475569;
+  --primary-red-light: #F1F5F9;
+  --primary-red-dark:  #1E293B;
+  --bg-color:          #F8FAFC;
+  --theme-primary:     #475569;
+  --theme-primary-light: #F1F5F9;
+  --theme-primary-rgb: 71, 85, 105;
+  --theme-bg:          #F8FAFC;
+}
+
+/* ─── Smooth transitions jab theme change ho ─── */
+.main-content,
+.sidebar,
+.menu-item,
+.app-container {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, Users } from 'lucide-react';
-
+import '../pages/MyTeam.css'
 
 export default function MyTeam() {
   const [searchQuery, setSearchQuery] = useState('');

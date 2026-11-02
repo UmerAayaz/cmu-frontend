@@ -1,26 +1,44 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'; // <-- useNavigate import kiya
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Clock, RefreshCw, ChevronDown, User } from 'lucide-react';
-import './Header.css'
+import { useProjectStore } from '../store/projectStore';
+import './Header.css';
 
 export default function Header({ userRole, setUserRole }) {
   const location = useLocation();
-  const navigate = useNavigate(); // <-- Navigate initialize kiya
+  const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
-  // Dynamic Page Title
-  let pageTitle = 'Lodge Complaint';
-  if (location.pathname.includes('setup')) pageTitle = location.pathname === '/complaint-setup' ? 'Complaint Setup' : 'Team Setup';
-  if (location.pathname === '/report-builder') pageTitle = 'Report Builder';
-  if (location.pathname === '/reports') pageTitle = 'Reports';
-  if (location.pathname === '/notifications') pageTitle = 'Notifications';
-  if (location.pathname === '/rca-setup') pageTitle = 'RCA Setup';
-  if (location.pathname === '/case-queue') pageTitle = 'Case Queue';
-  if (location.pathname === '/my-cases') pageTitle = 'My Cases';
-  if (location.pathname === '/my-team') pageTitle = 'My Team';
+  // ⭐ Active project nikalne ke liye
+  const activeProject = useProjectStore((s) => s.activeProject);
+
+  // ── Dynamic Page Title Logic (Naye Nested Routes ke hisaab se) ──
+  let pageTitle = 'Dashboard';
+  const path = location.pathname;
+
+  if (path === '/projects') pageTitle = 'Projects';
+  else if (path === '/projects/create') pageTitle = 'Create Project';
+  else if (path.includes('/dashboard')) pageTitle = 'Dashboard';
+  else if (path.includes('/lodge-complaint')) pageTitle = 'Lodge Complaint';
+  else if (path.includes('/complaint-setup')) pageTitle = 'Complaint Setup';
+  else if (path.includes('/team-setup')) pageTitle = 'Team Setup';
+  else if (path.includes('/report-builder')) pageTitle = 'Report Builder';
+  else if (path.includes('/reports')) pageTitle = 'Reports';
+  else if (path.includes('/notifications')) pageTitle = 'Notifications';
+  else if (path.includes('/rca-setup')) pageTitle = 'RCA Setup';
+  else if (path.includes('/case-queue')) pageTitle = 'Case Queue';
+  else if (path.includes('/my-cases')) pageTitle = 'My Cases';
+  else if (path.includes('/my-team')) pageTitle = 'My Team';
+  else if (path.includes('/forms/field-library')) pageTitle = 'Field Library';
+  else if (path.includes('/forms')) pageTitle = 'Forms';
+  else if (path.includes('/workflows')) pageTitle = 'Workflows';
+
+  // Context Name (Platform ya Project ka naam)
+  const contextName = activeProject ? activeProject.name : 'Platform';
 
   // User Profile Data
   const userProfiles = {
+    'Super Admin': { name: 'Super Admin', role: 'Super Admin', initials: 'SU' },
     'System Admin': { name: 'System Admin', role: 'Admin', initials: 'SA' },
     'Reporter': { name: 'Report User', role: 'Reporter', initials: 'RU' },
     'Team Lead': { name: 'Team Lead', role: 'Team Lead', initials: 'TL' },
@@ -33,8 +51,9 @@ export default function Header({ userRole, setUserRole }) {
 
   return (
     <div className="header">
+      {/* ⭐ Dynamic Breadcrumb */}
       <div className="header-breadcrumb">
-        <span style={{ color: '#9ca3af' }}>CMU</span>
+        <span style={{ color: '#9ca3af' }}>{contextName}</span>
         <span style={{ margin: '0 8px', color: '#9ca3af' }}>/</span>
         <span style={{ fontWeight: 600 }}>{pageTitle}</span>
       </div>
@@ -68,7 +87,8 @@ export default function Header({ userRole, setUserRole }) {
                     onClick={() => {
                       setUserRole(roleKey);
                       setIsDropdownOpen(false);
-                      navigate('/lodge-complaint'); // <-- YAHAN REDIRECT LAGAYA HAI
+                      // ⭐ Role change hone par wapis Projects List par bhej do
+                      navigate('/projects'); 
                     }}
                   >
                     {userProfiles[roleKey].name}

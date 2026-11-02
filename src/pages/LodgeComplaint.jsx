@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import { Lock, CheckCircle2, AlertCircle, Paperclip, ChevronDown } from 'lucide-react';
-import './LodgeComplaint.css'
+import { useNavigate, useParams } from 'react-router-dom'; // ⭐ Navigation ke liye add kiya
+import { Lock, CheckCircle2, AlertCircle, Paperclip } from 'lucide-react';
+import toast from 'react-hot-toast';
+import './LodgeComplaint.css';
 
 export default function LodgeComplaint() {
+  const navigate = useNavigate();
+  const { id } = useParams(); // Project ID
+
   const [cnic, setCnic] = useState('');
   const [fetchStatus, setFetchStatus] = useState('idle'); // 'idle', 'ETB', 'NTB', 'duplicate'
   
@@ -79,6 +84,15 @@ export default function LodgeComplaint() {
     const type = e.target.value;
     setComplaintType(type);
     setIssueFields({}); // reset fields on change
+  };
+
+  // ⭐ Save & Lodge Handler
+  const handleSaveAndLodge = () => {
+    if (!complaintType) return toast.error('Please select a complaint type');
+    
+    toast.success('Complaint lodged successfully!');
+    // Yahan Case Detail page par redirect kar rahe hain
+    navigate(`/projects/${id}/cases/CMP-2026-000001`); 
   };
 
   const currentAutoFill = COMPLAINT_TYPES[complaintType]?.autoFill;
@@ -453,7 +467,8 @@ export default function LodgeComplaint() {
       {isCustomerFetched && (
         <div style={{ position: 'fixed', bottom: 0, left: '250px', right: 0, background: 'white', borderTop: '1px solid var(--border-color)', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
           <span style={{ fontSize: '13px', color: '#9ca3af' }}>Fields marked <span style={{ color: 'var(--primary-red)' }}>*</span> are required. Aging auto-calculated on lodgment.</span>
-          <button className="btn-primary" style={{ padding: '10px 24px' }}>Save & Lodge</button>
+          {/* ⭐ Button par onClick lagaya hai */}
+          <button className="btn-primary" style={{ padding: '10px 24px' }} onClick={handleSaveAndLodge}>Save & Lodge</button>
         </div>
       )}
     </div>
