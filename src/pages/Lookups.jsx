@@ -37,6 +37,17 @@ const INITIAL_DATA = [
   }
 ];
 
+// ── Priority → badge class mapping ──
+const priorityBadgeClass = (priority) => {
+  switch (priority) {
+    case 'Critical': return 'wf-badge--critical';
+    case 'High':     return 'wf-badge--high';
+    case 'Medium':   return 'wf-badge--medium';
+    case 'Low':      return 'wf-badge--low';
+    default:         return 'wf-badge--neutral';
+  }
+};
+
 export default function Lookups() {
   const [categories, setCategories] = useState(INITIAL_DATA);
   const [expandedCats, setExpandedCats] = useState([1]); // Default me pehli category khuli ho
@@ -127,7 +138,7 @@ export default function Lookups() {
                 </div>
                 <Folder size={18} color="var(--primary-red)" style={{ marginRight: 12 }} />
                 <div style={{ flex: 1, fontWeight: 600, fontSize: 15, color: '#0F172A' }}>{cat.name}</div>
-                <span className={`wf-badge ${cat.priority === 'High' ? 'wf-badge--danger' : 'wf-badge--warning'}`}>
+                <span className={`wf-badge ${priorityBadgeClass(cat.priority)}`}>
                   {cat.priority} Priority
                 </span>
                 <button 
@@ -176,7 +187,7 @@ export default function Lookups() {
                                 <div key={prod.id} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', fontSize: 13 }}>
                                   <Tag size={14} color="#94A3B8" style={{ marginRight: 10 }} />
                                   <div style={{ flex: 1, color: '#334155' }}>{prod.name}</div>
-                                  <span className={`wf-badge ${prod.priority === 'Critical' ? 'wf-badge--danger' : 'wf-badge--neutral'}`} style={{ fontSize: 10 }}>
+                                  <span className={`wf-badge ${priorityBadgeClass(prod.priority)}`} style={{ fontSize: 10 }}>
                                     {prod.priority}
                                   </span>
                                 </div>
@@ -234,10 +245,10 @@ export default function Lookups() {
               value={formData.priority}
               onChange={e => setFormData({ ...formData, priority: e.target.value })}
             >
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-              <option>Critical</option>
+              <option value="Low"      >Low</option>
+              <option value="Medium"   >Medium</option>
+              <option value="High"     >High</option>
+              <option value="Critical" >Critical</option>
             </select>
           </div>
         )}
