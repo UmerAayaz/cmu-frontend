@@ -56,7 +56,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary-red); }
   --primary-red:       #DC2626;
   --primary-red-light: #FEE2E2;
   --primary-red-dark:  #991B1B;
-  --bg-color:          #FEF2F2;
+  --bg-color:          #fffefea4;
   --theme-primary:     #DC2626;
   --theme-primary-light: #FEE2E2;
   --theme-primary-rgb: 220, 38, 38;

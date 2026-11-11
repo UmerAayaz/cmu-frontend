@@ -18,7 +18,7 @@ export default function Sidebar({ userRole }) {
     (pathname.startsWith('/projects/') &&
       !pathname.startsWith('/projects/create') &&
       pathname !== '/projects');
-      
+
   const inProject = !!activeProject && isProjectRoute;
   const project = inProject ? activeProject : null;
   const base = project ? `/projects/${project.id}` : '';
@@ -28,31 +28,26 @@ export default function Sidebar({ userRole }) {
     { name: 'Projects', path: '/projects', icon: <FolderKanban size={18} /> },
   ];
 
-  // if (userRole === 'Super Admin') {
-  //   platformMenuItems.push(
-  //     { name: 'Global Fields', path: '/forms/field-library', icon: <Library size={18} /> }
-  //   );
-  // }
-
-  // ── Project Menu Map (Lucide Icons) ──
+  // ── Project Menu Map ──
   const allProjectItemsMap = {
-    dashboard:       { name: 'Dashboard',        path: `${base}/dashboard`,          icon: <Layout size={18} /> },
-    forms:           { name: 'Forms',            path: `${base}/forms`,              icon: <FileText size={18} /> },
-    workflows:       { name: 'Workflows',        path: `${base}/workflows`,          icon: <GitBranch size={18} /> },
-    fieldLibrary:    { name: 'Field Library',    path: `${base}/forms/field-library`,icon: <Library size={18} /> },
-    teamSetup:       { name: 'Team Setup',       path: `${base}/team-setup`,         icon: <Users size={18} /> },
-    myTasks:         { name: 'My Tasks',         path: `${base}/my-tasks`,           icon: <ListChecks size={18} /> },
-    myCases:         { name: 'My Cases',         path: `${base}/my-cases`,           icon: <Briefcase size={18} /> },
-    caseQueue:       { name: 'Case Queue',       path: `${base}/case-queue`,         icon: <Activity size={18} /> },
-    publishQueue:    { name: 'Publish Queue',    path: `${base}/publish-queue`,      icon: <Send size={18} /> },
-    lodgeComplaint:  { name: 'Lodge Complaint',  path: `${base}/lodge-complaint`,    icon: <FileText size={18} /> },
-    complaintSetup:  { name: 'Complaint Setup',  path: `${base}/complaint-setup`,    icon: <Settings size={18} /> },
-    lookups:         { name: 'Lookups',          path: `${base}/lookups`,            icon: <Tag size={18} /> }, // ⭐ Naya Lookups
-    myTeam:          { name: 'My Team',          path: `${base}/my-team`,            icon: <Users size={18} /> },
-    reportBuilder:   { name: 'Report Builder',   path: `${base}/report-builder`,     icon: <Layout size={18} /> },
-    reports:         { name: 'Reports',          path: `${base}/reports`,            icon: <BarChart2 size={18} /> },
-    notifications:   { name: 'Notifications',    path: `${base}/notifications`,      icon: <Bell size={18} /> },
-    rcaSetup:        { name: 'RCA Setup',        path: `${base}/rca-setup`,          icon: <Info size={18} /> },
+    dashboard:      { name: 'Dashboard',       path: `${base}/dashboard`,      icon: <Layout size={18} /> },
+    forms:          { name: 'Forms',           path: `${base}/forms`,          icon: <FileText size={18} /> },
+    workflows:      { name: 'Workflows',       path: `${base}/workflows`,      icon: <GitBranch size={18} /> },
+    // ✅ FIXED: /forms/library (not /forms/field-library)
+    fieldLibrary:   { name: 'Field Library',   path: `${base}/forms/library`,  icon: <Library size={18} /> },
+    teamSetup:      { name: 'Team Setup',      path: `${base}/team-setup`,     icon: <Users size={18} /> },
+    myTasks:        { name: 'My Tasks',        path: `${base}/my-tasks`,       icon: <ListChecks size={18} /> },
+    myCases:        { name: 'My Cases',        path: `${base}/my-cases`,       icon: <Briefcase size={18} /> },
+    caseQueue:      { name: 'Case Queue',      path: `${base}/case-queue`,     icon: <Activity size={18} /> },
+    publishQueue:   { name: 'Publish Queue',   path: `${base}/publish-queue`,  icon: <Send size={18} /> },
+    lodgeComplaint: { name: 'Lodge Complaint', path: `${base}/lodge-complaint`,icon: <FileText size={18} /> },
+    complaintSetup: { name: 'Complaint Setup', path: `${base}/complaint-setup`,icon: <Settings size={18} /> },
+    lookups:        { name: 'Lookups',         path: `${base}/lookups`,        icon: <Tag size={18} /> },
+    myTeam:         { name: 'My Team',         path: `${base}/my-team`,        icon: <Users size={18} /> },
+    reportBuilder:  { name: 'Report Builder',  path: `${base}/report-builder`, icon: <Layout size={18} /> },
+    reports:        { name: 'Reports',         path: `${base}/reports`,        icon: <BarChart2 size={18} /> },
+    notifications:  { name: 'Notifications',   path: `${base}/notifications`,  icon: <Bell size={18} /> },
+    rcaSetup:       { name: 'RCA Setup',       path: `${base}/rca-setup`,      icon: <Info size={18} /> },
   };
 
   let projectMenuItems = [];
@@ -60,17 +55,14 @@ export default function Sidebar({ userRole }) {
     const permissions = getPermissions();
     let allowedKeys = permissions[userRole] || [];
 
-    // Super Admin aur System Admin bypass
     if (userRole === 'Super Admin' || userRole === 'System Admin') {
       allowedKeys = Object.keys(allProjectItemsMap);
     }
 
-    // Map allowed items
     projectMenuItems = allowedKeys
-      .map(key => allProjectItemsMap[key])
+      .map((key) => allProjectItemsMap[key])
       .filter(Boolean);
 
-    // ⭐ Super Admin ke liye alag "ADMIN SETTINGS" section
     if (userRole === 'Super Admin') {
       projectMenuItems.push(
         { name: '--- ADMIN SETTINGS ---', path: '#', icon: null },
@@ -92,14 +84,22 @@ export default function Sidebar({ userRole }) {
       <div className="sidebar-logo">
         <div
           className="logo-icon"
-          style={inProject ? { background: 'var(--primary-red)', color: '#fff' } : { background: '#0F172A', color: '#fff' }}
+          style={
+            inProject
+              ? { background: 'var(--primary-red)', color: '#fff' }
+              : { background: '#0F172A', color: '#fff' }
+          }
         >
-          {inProject ? (project?.name?.[0]?.toUpperCase() || 'P') : 'P'}
+          {inProject ? project?.name?.[0]?.toUpperCase() || 'P' : 'P'}
         </div>
         <div style={{ minWidth: 0 }}>
           {inProject ? (
             <>
-              <div className="logo-title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={project?.name}>
+              <div
+                className="logo-title"
+                style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                title={project?.name}
+              >
                 {project?.name}
               </div>
               <div className="logo-subtitle" style={{ fontFamily: 'monospace', fontSize: 11 }}>
@@ -136,13 +136,16 @@ export default function Sidebar({ userRole }) {
       {/* Menu */}
       <div className="sidebar-menu" style={{ overflowY: 'auto' }}>
         {menuItems.map((item, idx) => {
-          // Section divider
           if (item.name && item.name.startsWith('---')) {
             return (
-              <div key={idx} style={{ 
-                fontSize: 11, fontWeight: 600, color: '#94A3B8', 
-                textTransform: 'uppercase', margin: '16px 0 8px 12px', letterSpacing: '0.5px' 
-              }}>
+              <div
+                key={idx}
+                style={{
+                  fontSize: 11, fontWeight: 600, color: '#94A3B8',
+                  textTransform: 'uppercase',
+                  margin: '16px 0 8px 12px', letterSpacing: '0.5px',
+                }}
+              >
                 {item.name.replace(/---/g, '').trim()}
               </div>
             );
@@ -152,8 +155,12 @@ export default function Sidebar({ userRole }) {
             <NavLink
               key={idx}
               to={item.path}
-              end={item.path === '/projects' || item.path === base || item.path === `${base}/forms`}
-              className={({ isActive }) => isActive ? 'menu-item active' : 'menu-item'}
+              end={
+                item.path === '/projects' ||
+                item.path === base ||
+                item.path === `${base}/forms`
+              }
+              className={({ isActive }) => (isActive ? 'menu-item active' : 'menu-item')}
             >
               {item.icon}
               <span>{item.name}</span>
