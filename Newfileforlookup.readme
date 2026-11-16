@@ -1,0 +1,354 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Plus, ChevronDown, ChevronRight, Folder, Layers, Unlink, Link as LinkIcon, AlertTriangle, Edit, Loader2, Box } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Modal from '../components/ui/Modal';
+import '../styles/workflow-module.css';
+
+const API_BASE_URL = 'https://localhost:7214/api/Lookup';
+
+export default function Lookups() {
+  const [categories, setCategories] = useState([]);
+  const [notConnectedItems, setNotConnectedItems] = useState([]); // Changed name
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const [expandedNodes, setExpandedNodes] = useState([]); 
+
+  // Modal States (Add)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [activeParent, setActiveParent] = useState(null); 
+  const [formData, setFormData] = useState({ name: '' });
+  const [isIndependent, setIsIndependent] = useState(false); 
+
+  // Modal States (Connect)
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [isLinking, setIsLinking] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [selectedParentId, setSelectedParentId] = useState("");
+
+  // ── 1. GET API (Fetch Data) ──
+  const fetchLookups = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/LookupListGet`);
+      
+      if (response.data && response.data.isSuccess) {
+        const flatData = response.data.data;
+
+        // Filter logic updated: 'nc_' for not connected (backwards compatible with 'orphan_')
+        const normalData = flatData.filter(item => !item.code || (!item.code.startsWith('nc_') && !item.code.startsWith('orphan_')));
+        const ncData = flatData.filter(item => item.code && (item.code.startsWith('nc_') || item.code.startsWith('orphan_')));
+
+        // Recursive Tree Builder for Infinite Depth
+        const buildTree = (items, parentId = null) => {
+          return items
+            .filter(item => item.parentListId === parentId)
+            .map(item => {
+              const children = buildTree(items, item.id);
+              return { ...item, children: children };
+            });
+        };
+
+        setCategories(buildTree(normalData));
+        setNotConnectedItems(ncData); 
+      }
+    } catch (error) {
+      console.error("GET Error:", error);
+      toast.error('Failed to fetch data from API');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { 
+    fetchLookups(); 
+  }, []); 
+
+  const toggleNode = (id) => setExpandedNodes(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+
+  const openAddModal = (parent = null) => {
+    setActiveParent(parent);
+    setFormData({ name: '' });
+    setIsIndependent(false);
+    setIsModalOpen(true);
+  };
+
+  // ── 2. POST API (Add New Lookup) ──
+  const handleSave = async () => {
+    if (!formData.name.trim()) return toast.error('Name is required');
+    setIsSaving(true);
+
+    const finalParentId = isIndependent ? null : (activeParent ? activeParent.id : null);
+    let finalCode = formData.name.toLowerCase().replace(/\s+/g, '_');
+    
+    if (isIndependent) {
+      finalCode = `nc_${finalCode}`; // 'nc_' prefix for Not Connected
+    }
+
+    const apiPayload = {
+      id: 0, 
+      code: finalCode,
+      name: formData.name,
+      parentListId: finalParentId,
+      userId: -1
+    };
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/LookupListSave`, apiPayload);
+      if (response.data.isSuccess) {
+        toast.success('Lookup saved successfully!');
+        setIsModalOpen(false);
+        fetchLookups(); 
+        
+        if (!isIndependent && activeParent && !expandedNodes.includes(activeParent.id)) {
+          setExpandedNodes(prev => [...prev, activeParent.id]);
+        }
+      }
+    } catch (error) {
+      console.error("POST Error:", error);
+      toast.error('Failed to save data to API');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const openLinkModal = (item) => {
+    setEditingItem(item);
+    setSelectedParentId(""); 
+    setIsLinkModalOpen(true);
+  };
+
+  // ── 3. POST API (Connect Unlinked Lookup) ──
+  const handleLinkSave = async () => {
+    if (!selectedParentId) return toast.error("Please select a parent lookup");
+    setIsLinking(true);
+
+    // Remove either 'nc_' or 'orphan_' prefix when connecting
+    const cleanCode = editingItem.code.replace(/^(nc_|orphan_)/, ''); 
+    
+    const apiPayload = {
+      id: editingItem.id, 
+      code: cleanCode,
+      name: editingItem.name,
+      parentListId: Number(selectedParentId),
+      userId: -1
+    };
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/LookupListSave`, apiPayload);
+      if (response.data.isSuccess) {
+        toast.success('Lookup connected successfully!');
+        setIsLinkModalOpen(false);
+        fetchLookups(); 
+      }
+    } catch (error) {
+      console.error("Update Error:", error);
+      toast.error('Failed to connect lookup');
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
+  // Helper: Get flat list of all active lookups for the Connect dropdown
+  const getAllActiveLookups = (nodes) => {
+    let list = [];
+    nodes.forEach(node => {
+      list.push({ value: node.id, label: node.name });
+      if (node.children && node.children.length > 0) {
+        list = [...list, ...getAllActiveLookups(node.children)];
+      }
+    });
+    return list;
+  };
+
+  // ⭐ RECURSIVE RENDER FUNCTION FOR INFINITE LEVELS ⭐
+  const renderTree = (nodes, depth = 0) => {
+    return nodes.map(node => {
+      const isExpanded = expandedNodes.includes(node.id);
+      const hasChildren = node.children && node.children.length > 0;
+
+      return (
+        <div key={node.id} style={{ borderBottom: depth === 0 ? '1px solid #E2E8F0' : 'none' }}>
+          
+          <div 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              padding: '12px 20px', 
+              paddingLeft: `${20 + depth * 30}px`, 
+              background: isExpanded ? '#F8FAFC' : '#fff', 
+              cursor: 'pointer',
+              borderTop: depth > 0 ? '1px solid #F1F5F9' : 'none'
+            }} 
+            onClick={() => hasChildren ? toggleNode(node.id) : null}
+          >
+            <div style={{ width: 24, color: '#64748B' }}>
+              {hasChildren ? (isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />) : null}
+            </div>
+            
+            {depth === 0 ? <Folder size={18} color="var(--primary-red)" style={{ marginRight: 12 }} /> : 
+             hasChildren ? <Layers size={16} color="#64748B" style={{ marginRight: 12 }} /> : 
+             <Box size={16} color="#94A3B8" style={{ marginRight: 12 }} />}
+            
+            <div style={{ flex: 1, fontWeight: depth === 0 ? 600 : 500, fontSize: depth === 0 ? 15 : 14, color: '#0F172A' }}>
+              {node.name}
+            </div>
+            
+            <button 
+              className="wf-btn wf-btn--ghost" 
+              style={{ padding: '4px 12px', fontSize: 12, color: '#64748B' }} 
+              onClick={(e) => { e.stopPropagation(); openAddModal(node); }}
+            >
+              <Plus size={14} /> Add Child
+            </button>
+          </div>
+
+          {isExpanded && hasChildren && (
+            <div style={{ background: '#F8FAFC' }}>
+              {renderTree(node.children, depth + 1)}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="wf-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <Loader2 className="animate-spin" size={32} color="var(--primary-red)" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="wf-page">
+      {/* HEADER */}
+      <div className="wf-header">
+        <div>
+          <h1 className="wf-title">Lookups Management</h1>
+          <p className="wf-subtitle">Manage hierarchy</p>
+        </div>
+        <button className="wf-btn wf-btn--primary" onClick={() => openAddModal(null)}>
+          <Plus size={16} /> Add Root Lookup
+        </button>
+      </div>
+
+      {/* SECTION 1: MAIN TREE */}
+      <div className="wf-card" style={{ overflow: 'hidden', marginBottom: '24px' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1E293B', margin: 0 }}>Active Lookups</h2>
+        </div>
+        {categories.length === 0 ? (
+           <div style={{ padding: '20px', textAlign: 'center', color: '#64748B' }}>No lookups found. Add one to get started.</div>
+        ) : renderTree(categories, 0)}
+      </div>
+
+      {/* SECTION 2: NOT CONNECTED ITEMS */}
+      {notConnectedItems.length > 0 && (
+        <div className="wf-card" style={{ border: '1px solid #FCD34D', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #FDE68A', background: '#FEF3C7', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Unlink size={18} color="#D97706" />
+            <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#B45309', margin: 0 }}>Not Connected Lookups</h2>
+          </div>
+          <div style={{ padding: '20px' }}>
+            {notConnectedItems.map(item => (
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Box size={18} color="#D97706" />
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#78350F' }}>{item.name}</div>
+                    <div style={{ fontSize: '12px', color: '#B45309' }}>Status: Not Connected (No Parent)</div>
+                  </div>
+                </div>
+                <button className="wf-btn wf-btn--secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px', borderColor: '#FCD34D', color: '#B45309', background: '#FFF' }} onClick={() => openLinkModal(item)}>
+                  <Edit size={14} /> Connect
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: ADD NEW LOOKUP */}
+      <Modal 
+        open={isModalOpen} onClose={() => setIsModalOpen(false)} 
+        title={activeParent ? `Add Child to "${activeParent.name}"` : 'Add Root Lookup'}
+        footer={
+          <>
+            <button className="wf-btn wf-btn--secondary" onClick={() => setIsModalOpen(false)} disabled={isSaving}>Cancel</button>
+            <button className="wf-btn wf-btn--primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>Save as Not Connected</span>
+            <span style={{ fontSize: '12px', color: '#64748B' }}>It will not be linked to any parent</span>
+          </div>
+          <label style={{ position: 'relative', display: 'inline-block', width: '46px', height: '24px', cursor: 'pointer', margin: 0 }}>
+            <input type="checkbox" checked={isIndependent} onChange={(e) => setIsIndependent(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+            <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: isIndependent ? 'var(--primary-red)' : '#CBD5E1', transition: '.3s', borderRadius: '24px' }}>
+              <span style={{ position: 'absolute', height: '18px', width: '18px', left: isIndependent ? '24px' : '4px', bottom: '3px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%' }}></span>
+            </span>
+          </label>
+        </div>
+        
+        {isIndependent && (
+          <div style={{ padding: '16px', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <AlertTriangle size={20} color="#DC2626" style={{ marginTop: 2 }} />
+              <div>
+                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#991B1B' }}>Independent Lookup</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#B91C1C' }}>This lookup will be saved without a parent and added to the "Not Connected" list.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="wf-field">
+          <label className="wf-label">Lookup Name <span className="wf-label__req"> *</span></label>
+          <input className="wf-input" value={formData.name} onChange={e => setFormData({ name: e.target.value })} placeholder="e.g. ATM Issue" autoFocus />
+        </div>
+      </Modal>
+
+      {/* MODAL 2: CONNECT NOT CONNECTED ITEM */}
+      <Modal 
+        open={isLinkModalOpen} 
+        onClose={() => setIsLinkModalOpen(false)} 
+        title={`Connect "${editingItem?.name}"`}
+        footer={
+          <>
+            <button className="wf-btn wf-btn--secondary" onClick={() => setIsLinkModalOpen(false)} disabled={isLinking}>Cancel</button>
+            <button className="wf-btn wf-btn--primary" onClick={handleLinkSave} disabled={!selectedParentId || isLinking} style={{ background: '#D97706' }}>
+              {isLinking ? 'Connecting...' : <><LinkIcon size={16} style={{ marginRight: '6px' }}/> Connect</>}
+            </button>
+          </>
+        }
+      >
+        <div className="wf-field">
+          <label className="wf-label">Select Parent Lookup <span className="wf-label__req">*</span></label>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <select 
+              className="wf-select" 
+              value={selectedParentId} 
+              onChange={(e) => setSelectedParentId(e.target.value)}
+              style={{ appearance: 'none', WebkitAppearance: 'none', paddingRight: '40px', width: '100%' }}
+            >
+              <option value="" disabled>-- Choose a Parent --</option>
+              {getAllActiveLookups(categories).map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }}>
+              <ChevronDown size={18} />
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
