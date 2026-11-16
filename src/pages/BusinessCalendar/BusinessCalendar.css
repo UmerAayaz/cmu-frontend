@@ -1,0 +1,68 @@
+/* --- Root Variables --- */
+:root {
+  --font-display: system-ui, -apple-system, sans-serif;
+  --font-mono: monospace;
+  --primary-soft: #fff1f0;
+  --primary-hover: #cf1322;
+  --surface: #ffffff;
+  --surface-2: #fafafa;
+  --border: #d9d9d9;
+  --ink: #141414;
+  --subtle: #8c8c8c;
+}
+
+/* --- Main Layout --- */
+.calendar-page { padding: 24px; background: #f5f5f5; min-height: 100vh; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.split-layout { display: flex; gap: 24px; align-items: flex-start; }
+.split-side { width: 260px; flex-shrink: 0; }
+.split-main { flex: 1; min-width: 0; }
+.columns-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+/* --- Typography --- */
+.page-heading { margin-bottom: 16px; }
+.page-title { margin: 0; font-size: 24px; font-weight: 600; color: var(--ink); }
+.page-desc { color: var(--subtle); margin-top: 4px; display: block; }
+
+/* --- Panels & Cards --- */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
+.panel-header { padding: 16px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 16px; color: var(--ink); }
+.panel-header-num { color: var(--subtle); margin-left: 8px; }
+.panel-body { padding: 16px; }
+.note-box { padding: 12px 16px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; font-size: 13px; color: #389e0d; margin-top: 16px; }
+.chip { padding: 2px 8px; background: #f0f0f0; border-radius: 12px; font-size: 12px; color: #595959; display: inline-block; }
+
+/* --- Sidebar --- */
+.side-list { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.side-list-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--ink); }
+.side-list-items { display: flex; flex-direction: column; }
+.side-list-item { padding: 12px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all 0.2s; }
+.side-list-item:hover { background: #fafafa; }
+.side-list-item.active { background: rgb(254, 242, 242);; border-left-color: #b5161b; }
+.side-list-title { font-weight: 500; color: var(--ink); }
+.side-list-detail { font-size: 12px; color: var(--subtle); }
+
+/* --- Header Row --- */
+.calendar-header-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+.calendar-title { margin: 0; font-size: 20px; font-weight: 600; color: var(--ink); }
+.calendar-actions { margin-left: auto; display: flex; gap: 8px; }
+.read-only-text { margin-left: auto; font-size: 12px; color: var(--subtle); }
+
+/* --- Calendar Grid --- */
+.month-nav { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 16px; }
+.month-title { font-size: 16px; font-weight: 600; text-align: center; color: var(--ink); }
+.month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.weekday-header { padding: 6px; font-size: 12px; font-weight: 600; color: var(--subtle); text-align: center; }
+.day-blank { display: block; }
+.day-cell { box-sizing: border-box; min-height: 78px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; align-items: stretch; gap: 4px; font: inherit; line-height: normal; min-width: 0; text-align: left; background: var(--surface); }
+.day-cell.closed { background: var(--surface-2); }
+.day-cell.holiday { background: var(--primary-soft); }
+.day-cell.is-button { cursor: pointer; color: inherit; transition: border-color 0.2s; }
+.day-cell.is-button:hover { border-color: #b5161b; }
+.day-number { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+.day-cell.closed .day-number { color: var(--subtle); }
+.day-label { font-size: 11px; color: var(--subtle); overflow-wrap: anywhere; }
+.day-cell.holiday .day-label { color: var(--primary-hover); font-weight: 600; }
+
+/* --- Form Actions --- */
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }

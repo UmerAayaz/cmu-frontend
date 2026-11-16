@@ -2,10 +2,10 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   FileText, Settings, Users, Layout, BarChart2, Bell, Info, Activity,
   Briefcase, Library, FolderKanban, GitBranch, Send, ListChecks, ArrowLeft,
-  ShieldCheck, Tag
+  ShieldCheck, Tag, Calendar // 👈 Calendar icon added
 } from 'lucide-react';
 import { useProjectStore } from '../store/projectStore';
-import { getPermissions } from '../utils/permissions';
+import { getPermissions } from '../pages/RolePermission/permissions';
 import './Sidebar.css';
 
 export default function Sidebar({ userRole }) {
@@ -33,7 +33,6 @@ export default function Sidebar({ userRole }) {
     dashboard:      { name: 'Dashboard',       path: `${base}/dashboard`,      icon: <Layout size={18} /> },
     forms:          { name: 'Forms',           path: `${base}/forms`,          icon: <FileText size={18} /> },
     workflows:      { name: 'Workflows',       path: `${base}/workflows`,      icon: <GitBranch size={18} /> },
-    // ✅ FIXED: /forms/library (not /forms/field-library)
     fieldLibrary:   { name: 'Field Library',   path: `${base}/forms/library`,  icon: <Library size={18} /> },
     teamSetup:      { name: 'Team Setup',      path: `${base}/team-setup`,     icon: <Users size={18} /> },
     myTasks:        { name: 'My Tasks',        path: `${base}/my-tasks`,       icon: <ListChecks size={18} /> },
@@ -48,6 +47,9 @@ export default function Sidebar({ userRole }) {
     reports:        { name: 'Reports',         path: `${base}/reports`,        icon: <BarChart2 size={18} /> },
     notifications:  { name: 'Notifications',   path: `${base}/notifications`,  icon: <Bell size={18} /> },
     rcaSetup:       { name: 'RCA Setup',       path: `${base}/rca-setup`,      icon: <Info size={18} /> },
+    
+    // 👇 NAYA MENU ITEM ADD KAR DIYA GAYA HAI 👇
+    businessCalendar: { name: 'Business Calendar', path: `${base}/business-calendar`, icon: <Calendar size={18} /> },
   };
 
   let projectMenuItems = [];

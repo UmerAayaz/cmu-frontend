@@ -4,7 +4,6 @@ export const ALL_PERMISSIONS = [
   { key: 'workflows', label: 'Workflows' },
   { key: 'fieldLibrary', label: 'Field Library' },
   { key: 'teamSetup', label: 'Team Setup' },
-  { key: 'myTasks', label: 'My Tasks' },
   { key: 'myCases', label: 'My Cases' },
   { key: 'caseQueue', label: 'Case Queue' },
   { key: 'publishQueue', label: 'Publish Queue' },
@@ -15,6 +14,7 @@ export const ALL_PERMISSIONS = [
   { key: 'reports', label: 'Reports' },
   { key: 'notifications', label: 'Notifications' },
   { key: 'rcaSetup', label: 'RCA Setup' },
+  { key: 'businessCalendar', label: 'Business Calendar' }, 
 ];
 
 export const ROLES = [
@@ -31,8 +31,8 @@ export const ROLES = [
 export const DEFAULT_PERMISSIONS = {
   'Super Admin': ALL_PERMISSIONS.map(p => p.key), // Sab kuch
   'System Admin': ALL_PERMISSIONS.map(p => p.key), // Sab kuch
-  'Team Lead': ['dashboard', 'teamSetup', 'myTasks', 'myCases', 'caseQueue', 'myTeam', 'lodgeComplaint', 'reports', 'notifications'],
-  'Case Officer': ['dashboard', 'myTasks', 'myCases', 'caseQueue', 'lodgeComplaint', 'notifications'],
+  'Team Lead': ['dashboard', 'teamSetup', 'myCases', 'caseQueue', 'myTeam', 'lodgeComplaint', 'reports', 'notifications'],
+  'Case Officer': ['dashboard', 'myCases', 'caseQueue', 'lodgeComplaint', 'notifications'],
   'Stakeholder': ['dashboard', 'myCases', 'lodgeComplaint', 'notifications'],
   'Reporter': ['dashboard', 'lodgeComplaint', 'reports', 'notifications'],
   'Complaint Lodger': ['dashboard', 'lodgeComplaint']
@@ -40,7 +40,28 @@ export const DEFAULT_PERMISSIONS = {
 
 export const getPermissions = () => {
   const stored = localStorage.getItem('role_permissions');
-  return stored ? JSON.parse(stored) : DEFAULT_PERMISSIONS;
+  if (!stored) return DEFAULT_PERMISSIONS;
+
+  try {
+    const parsed = JSON.parse(stored);
+    const validKeys = ALL_PERMISSIONS.map(p => p.key);
+    const sanitizedPermissions = {};
+
+    // Har role ke permissions ko check karein aur sirf valid keys rakhein
+    // Isse localStorage mein pari purani keys (jaise myTasks) khud nikal jayengi
+    Object.keys(parsed).forEach(role => {
+      if (Array.isArray(parsed[role])) {
+        sanitizedPermissions[role] = parsed[role].filter(key => validKeys.includes(key));
+      } else {
+        sanitizedPermissions[role] = DEFAULT_PERMISSIONS[role] || [];
+      }
+    });
+
+    return sanitizedPermissions;
+  } catch (error) {
+    console.error("Error parsing permissions from localStorage", error);
+    return DEFAULT_PERMISSIONS;
+  }
 };
 
 export const savePermissions = (perms) => {

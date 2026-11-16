@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { App as AntApp } from 'antd'; // 👈 AntApp import kiya
 
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -8,9 +9,8 @@ import Header from './components/Header';
 import ProjectsListPage from './pages/ProjectsListPage';
 import CreateProjectWizard from './pages/CreateProjectWizard';
 import ProjectDashboard from './pages/ProjectDashboard';
-import RolePermissions from './pages/RolePermissions';
+import RolePermissions from './pages/RolePermission/RolePermission';
 
-// ✅ E-Form separate pages
 import FormsListPage from './pages/eform/FormsListPage';
 import FormBuilderPage from './pages/eform/FormBuilderPage';
 import FieldLibraryPage from './pages/eform/FieldLibraryPage';
@@ -31,6 +31,9 @@ import CaseQueue from './pages/CaseQueue';
 import MyCases from './pages/MyCases';
 import MyTeam from './pages/MyTeam';
 import Lookups from './pages/Lookups';
+
+// 👇 Business Calendar Import
+import BusinessCalendar from './pages/BusinessCalendar/BusinessCalendar';
 
 import { projectsApi } from './api/projects.api';
 import { useProjectStore } from './store/projectStore';
@@ -56,18 +59,17 @@ function ProjectLayout() {
   return <Outlet />;
 }
 
-// ✅ Wrappers for localStorage pages
 function FormsListRoute() { const navigate = useNavigate(); return <FormsListPage navigate={navigate} />; }
 function FieldLibraryRoute() { const navigate = useNavigate(); return <FieldLibraryPage navigate={navigate} />; }
 function FormBuilderRoute({ isNew = false }) {
   const navigate = useNavigate()
-  const { formId, id } = useParams() // ✅ id matlab projectId (e.g. 3)
+  const { formId, id } = useParams() 
   return (
     <FormBuilderPage
       formId={isNew ? null : formId}
       isNew={isNew}
       navigate={navigate}
-      projectId={id} // ✅ Pass projectId to page
+      projectId={id} 
     />
   )
 }
@@ -80,53 +82,56 @@ export default function App() {
   const currentTheme = activeProject?.theme || 'red';
 
   return (
-    <BrowserRouter>
-      <div className="app-shell" data-project-theme={currentTheme}>
-        <Sidebar userRole={userRole} />
-        <div className="main-shell">
-          <Header userRole={userRole} setUserRole={setUserRole} />
-          <div className="content-area">
-            <Routes>
-              <Route path="/" element={<Navigate to="/projects" replace />} />
-              <Route path="/projects" element={<ProjectsListPage userRole={userRole} />} />
-              <Route path="/projects/create" element={canCreateProject ? <CreateProjectWizard /> : <Navigate to="/projects" replace />} />
+    <AntApp> {/* 👈 AntApp wrapper lagaya */}
+      <BrowserRouter>
+        <div className="app-shell" data-project-theme={currentTheme}>
+          <Sidebar userRole={userRole} />
+          <div className="main-shell">
+            <Header userRole={userRole} setUserRole={setUserRole} />
+            <div className="content-area">
+              <Routes>
+                <Route path="/" element={<Navigate to="/projects" replace />} />
+                <Route path="/projects" element={<ProjectsListPage userRole={userRole} />} />
+                <Route path="/projects/create" element={canCreateProject ? <CreateProjectWizard /> : <Navigate to="/projects" replace />} />
 
-              <Route path="/projects/:id" element={<ProjectLayout />}>
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<ProjectDashboard />} />
-                <Route path="permissions" element={<RolePermissions />} />
+                <Route path="/projects/:id" element={<ProjectLayout />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<ProjectDashboard />} />
+                  <Route path="permissions" element={<RolePermissions />} />
 
-                {/* ✅ SEPARATE FORM PAGES (Sahi order mein) */}
-                <Route path="forms" element={<FormsListRoute />} />
-                <Route path="forms/new" element={<FormBuilderRoute isNew />} />
-                <Route path="forms/library" element={<FieldLibraryRoute />} />
-                {/* Dynamic route sabse aakhir mein */}
-                <Route path="forms/:formId" element={<FormBuilderRoute />} />
+                  <Route path="forms" element={<FormsListRoute />} />
+                  <Route path="forms/new" element={<FormBuilderRoute isNew />} />
+                  <Route path="forms/library" element={<FieldLibraryRoute />} />
+                  <Route path="forms/:formId" element={<FormBuilderRoute />} />
 
-                <Route path="workflows" element={<WorkflowsList />} />
-                <Route path="workflows/new" element={<WorkflowDesigner />} />
-                <Route path="workflows/:workflowId/designer" element={<WorkflowDesigner />} />
-                <Route path="team-setup" element={<TeamSetup />} />
-                <Route path="my-tasks" element={<MyTasks />} />
-                <Route path="my-cases" element={<MyCases />} />
-                <Route path="case-queue" element={<CaseQueue />} />
-                <Route path="publish-queue" element={<PublishQueue />} />
-                <Route path="lodge-complaint" element={<LodgeComplaint />} />
-                <Route path="cases/:caseId" element={<CaseDetail />} />
-                <Route path="complaint-setup" element={<ComplaintSetup />} />
-                <Route path="my-team" element={<MyTeam />} />
-                <Route path="report-builder" element={<ReportBuilder />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="rca-setup" element={<RCASetup />} />
-                <Route path="lookups" element={<Lookups />} />
-              </Route>
+                  <Route path="workflows" element={<WorkflowsList />} />
+                  <Route path="workflows/new" element={<WorkflowDesigner />} />
+                  <Route path="workflows/:workflowId/designer" element={<WorkflowDesigner />} />
+                  <Route path="team-setup" element={<TeamSetup />} />
+                  <Route path="my-tasks" element={<MyTasks />} />
+                  <Route path="my-cases" element={<MyCases />} />
+                  <Route path="case-queue" element={<CaseQueue />} />
+                  <Route path="publish-queue" element={<PublishQueue />} />
+                  <Route path="lodge-complaint" element={<LodgeComplaint />} />
+                  <Route path="cases/:caseId" element={<CaseDetail />} />
+                  <Route path="complaint-setup" element={<ComplaintSetup />} />
+                  <Route path="my-team" element={<MyTeam />} />
+                  <Route path="report-builder" element={<ReportBuilder />} />
+                  <Route path="reports" element={<Reports />} />
+                  <Route path="notifications" element={<Notifications />} />
+                  <Route path="rca-setup" element={<RCASetup />} />
+                  <Route path="lookups" element={<Lookups />} />
+                  
+                  {/* 👇 Business Calendar Route */}
+                  <Route path="business-calendar" element={<BusinessCalendar />} />
+                </Route>
 
-              <Route path="*" element={<Navigate to="/projects" replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to="/projects" replace />} />
+              </Routes>
+            </div>
           </div>
         </div>
-      </div>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AntApp>
   );
 }
