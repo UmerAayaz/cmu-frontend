@@ -1,0 +1,363 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Plus, ChevronDown, ChevronRight, Folder, Layers, Tag, Unlink, Link as LinkIcon, AlertTriangle, Edit, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Modal from '../components/ui/Modal';
+import '../styles/workflow-module.css';
+
+const API_BASE_URL = 'https://localhost:7214/api/Lookup';
+
+export default function Lookups() {
+  const [categories, setCategories] = useState([]);
+  const [detachedItems, setDetachedItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const [expandedCats, setExpandedCats] = useState([]); 
+  const [expandedSubs, setExpandedSubs] = useState([]);
+
+  // Modal States (Add)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [modalMode, setModalMode] = useState('category'); 
+  const [activeParent, setActiveParent] = useState(null); 
+  const [formData, setFormData] = useState({ name: '' });
+  const [isIndependent, setIsIndependent] = useState(false); 
+  const [independentType, setIndependentType] = useState('sub'); 
+
+  // Modal States (Connect)
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [isLinking, setIsLinking] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [selectedParentId, setSelectedParentId] = useState("");
+
+  // ── 1. GET API (Fetch Data) ──
+  const fetchLookups = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/LookupListGet`);
+      
+      if (response.data && response.data.isSuccess) {
+        const flatData = response.data.data;
+
+        // Data ko Normal aur Orphan (Detached) mein divide karein
+        const normalData = flatData.filter(item => !item.code || !item.code.startsWith('orphan_'));
+        const orphanData = flatData.filter(item => item.code && item.code.startsWith('orphan_'));
+
+        // Recursive Tree Builder
+        const buildTree = (items, parentId = null) => {
+          return items
+            .filter(item => item.parentListId === parentId)
+            .map(item => {
+              const children = buildTree(items, item.id);
+              return { ...item, children: children };
+            });
+        };
+
+        setCategories(buildTree(normalData));
+        setDetachedItems(orphanData.map(item => ({ 
+          ...item, 
+          isProduct: item.code.includes('_product_') 
+        })));
+      }
+    } catch (error) {
+      console.error("GET Error:", error);
+      toast.error('Failed to fetch data from API');
+      setCategories([]);
+      setDetachedItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { 
+    fetchLookups(); 
+  }, []); 
+
+  const toggleCat = (id) => setExpandedCats(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  const toggleSub = (id) => setExpandedSubs(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+
+  const openModal = (mode, parent = null) => {
+    setModalMode(mode);
+    setActiveParent(parent);
+    setFormData({ name: '' });
+    setIsIndependent(false);
+    setIndependentType('sub');
+    setIsModalOpen(true);
+  };
+
+  // ── 2. POST API (Add New Item) ──
+  const handleSave = async () => {
+    if (!formData.name.trim()) return toast.error('Name is required');
+    setIsSaving(true);
+
+    const finalParentId = isIndependent ? null : (activeParent ? activeParent.id : null);
+    let finalCode = formData.name.toLowerCase().replace(/\s+/g, '_');
+    if (isIndependent) finalCode = `orphan_${independentType}_${finalCode}`;
+
+    const apiPayload = {
+      id: 0, // 0 means new record
+      code: finalCode,
+      name: formData.name,
+      parentListId: finalParentId,
+      userId: -1
+    };
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/LookupListSave`, apiPayload);
+      
+      if (response.data.isSuccess) {
+        toast.success('Saved successfully!');
+        setIsModalOpen(false);
+        fetchLookups(); // List ko refresh karein
+      }
+    } catch (error) {
+      console.error("POST Error:", error);
+      toast.error('Failed to save data to API');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const openLinkModal = (item) => {
+    setEditingItem(item);
+    setSelectedParentId(""); 
+    setIsLinkModalOpen(true);
+  };
+
+  // ── 3. POST API (Connect Unlinked Item) ──
+  const handleLinkSave = async () => {
+    if (!selectedParentId) return toast.error("Please select a parent");
+    setIsLinking(true);
+
+    const cleanCode = editingItem.code.replace(/^orphan_(sub|product)_/, ''); 
+    
+    const apiPayload = {
+      id: editingItem.id, // Existing ID for update
+      code: cleanCode,
+      name: editingItem.name,
+      parentListId: Number(selectedParentId),
+      userId: -1
+    };
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/LookupListSave`, apiPayload);
+      
+      if (response.data.isSuccess) {
+        toast.success('Item connected successfully!');
+        setIsLinkModalOpen(false);
+        fetchLookups(); 
+      }
+    } catch (error) {
+      console.error("Update Error:", error);
+      toast.error('Failed to connect item');
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
+  const getCategoryOptions = () => categories.map(c => ({ value: c.id, label: c.name }));
+  const getSubCategoryOptions = () => {
+    let subs = [];
+    categories.forEach(cat => {
+      if (cat.children) cat.children.forEach(sub => subs.push({ value: sub.id, label: `${cat.name} > ${sub.name}` }));
+    });
+    return subs;
+  };
+
+  // Loading Screen
+  if (isLoading) {
+    return (
+      <div className="wf-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <Loader2 className="animate-spin" size={32} color="var(--primary-red)" />
+        <span style={{ marginLeft: 10, fontWeight: 500 }}>Loading Data from API...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="wf-page">
+      {/* HEADER */}
+      <div className="wf-header">
+        <div>
+          <h1 className="wf-title">Categories & Products</h1>
+          <p className="wf-subtitle">Manage hierarchy</p>
+        </div>
+        <button className="wf-btn wf-btn--primary" onClick={() => openModal('category')}>
+          <Plus size={16} /> Add Category
+        </button>
+      </div>
+
+      {/* SECTION 1: MAIN TREE */}
+      <div className="wf-card" style={{ overflow: 'hidden', marginBottom: '24px' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1E293B', margin: 0 }}>Active Hierarchy</h2>
+        </div>
+        {categories.length === 0 ? (
+           <div style={{ padding: '20px', textAlign: 'center', color: '#64748B' }}>No data found. Add a Category to get started.</div>
+        ) : categories.map(cat => {
+          const isCatOpen = expandedCats.includes(cat.id);
+          return (
+            <div key={cat.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', background: isCatOpen ? '#F8FAFC' : '#fff', cursor: 'pointer' }} onClick={() => toggleCat(cat.id)}>
+                <div style={{ width: 24, color: '#64748B' }}>{isCatOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</div>
+                <Folder size={18} color="var(--primary-red)" style={{ marginRight: 12 }} />
+                <div style={{ flex: 1, fontWeight: 600, fontSize: 15, color: '#0F172A' }}>{cat.name}</div>
+                <button className="wf-btn wf-btn--secondary" style={{ marginLeft: 16, padding: '4px 12px', fontSize: 12 }} onClick={(e) => { e.stopPropagation(); openModal('sub', cat); }}>
+                  <Plus size={12} /> Add Sub
+                </button>
+              </div>
+              {isCatOpen && (
+                <div style={{ padding: '0 20px 16px 56px' }}>
+                  {cat.children.map(sub => {
+                    const isSubOpen = expandedSubs.includes(sub.id);
+                    return (
+                      <div key={sub.id} style={{ marginTop: 8, border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', background: '#fff', cursor: 'pointer' }} onClick={() => toggleSub(sub.id)}>
+                          <div style={{ width: 20, color: '#94A3B8' }}>{isSubOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</div>
+                          <Layers size={16} color="#64748B" style={{ marginRight: 10 }} />
+                          <div style={{ flex: 1, fontWeight: 500, fontSize: 14 }}>{sub.name}</div>
+                          <button className="wf-btn wf-btn--ghost" style={{ fontSize: 12, padding: '4px 8px' }} onClick={(e) => { e.stopPropagation(); openModal('product', sub); }}>
+                            <Plus size={12} /> Add Product
+                          </button>
+                        </div>
+                        {isSubOpen && (
+                          <div style={{ background: '#F8FAFC', padding: '8px 16px 12px 46px' }}>
+                            {sub.children.length === 0 ? <div style={{ fontSize: 12, color: '#94A3B8' }}>No products.</div> : 
+                              sub.children.map(prod => (
+                                <div key={prod.id} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', fontSize: 13 }}>
+                                  <Tag size={14} color="#94A3B8" style={{ marginRight: 10 }} />
+                                  <div style={{ flex: 1, color: '#334155' }}>{prod.name}</div>
+                                </div>
+                              ))
+                            }
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* SECTION 2: UNLINKED ITEMS */}
+      {detachedItems.length > 0 && (
+        <div className="wf-card" style={{ border: '1px solid #FCD34D', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #FDE68A', background: '#FEF3C7', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Unlink size={18} color="#D97706" />
+            <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#B45309', margin: 0 }}>Unlinked Items</h2>
+          </div>
+          <div style={{ padding: '20px' }}>
+            {detachedItems.map(item => (
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {item.isProduct ? <Tag size={18} color="#D97706" /> : <Layers size={18} color="#D97706" />}
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#78350F' }}>{item.name}</div>
+                    <div style={{ fontSize: '12px', color: '#B45309' }}>Type: {item.isProduct ? 'Product' : 'Sub-category'}</div>
+                  </div>
+                </div>
+                <button className="wf-btn wf-btn--secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px', borderColor: '#FCD34D', color: '#B45309', background: '#FFF' }} onClick={() => openLinkModal(item)}>
+                  <Edit size={14} /> Connect
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: ADD NEW ITEM */}
+      <Modal 
+        open={isModalOpen} onClose={() => setIsModalOpen(false)} 
+        title={isIndependent ? 'Add Independent Item' : (modalMode === 'category' ? 'Add New Category' : modalMode === 'sub' ? `Add Sub to "${activeParent?.name}"` : `Add Product to "${activeParent?.name}"`)}
+        footer={
+          <>
+            <button className="wf-btn wf-btn--secondary" onClick={() => setIsModalOpen(false)} disabled={isSaving}>Cancel</button>
+            <button className="wf-btn wf-btn--primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>Create as Detached Item</span>
+            <span style={{ fontSize: '12px', color: '#64748B' }}>Save this without a parent</span>
+          </div>
+          <label style={{ position: 'relative', display: 'inline-block', width: '46px', height: '24px', cursor: 'pointer', margin: 0 }}>
+            <input type="checkbox" checked={isIndependent} onChange={(e) => setIsIndependent(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+            <span style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: isIndependent ? 'var(--primary-red)' : '#CBD5E1', transition: '.3s', borderRadius: '24px' }}>
+              <span style={{ position: 'absolute', height: '18px', width: '18px', left: isIndependent ? '24px' : '4px', bottom: '3px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%' }}></span>
+            </span>
+          </label>
+        </div>
+        {isIndependent && (
+          <div style={{ padding: '16px', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '12px' }}>
+              <AlertTriangle size={20} color="#DC2626" style={{ marginTop: 2 }} />
+              <div>
+                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#991B1B' }}>Make this independent (Parent ID null)</h4>
+              </div>
+            </div>
+            <div className="wf-field" style={{ marginBottom: 0 }}>
+              <label className="wf-label" style={{ fontSize: '13px', color: '#991B1B' }}>What is this item?</label>
+              <select className="wf-select" value={independentType} onChange={(e) => setIndependentType(e.target.value)} style={{ borderColor: '#FCA5A5', background: '#FFF' }}>
+                <option value="sub">Sub-category (Detached)</option>
+                <option value="product">Product (Detached)</option>
+              </select>
+            </div>
+          </div>
+        )}
+        <div className="wf-field">
+          <label className="wf-label">{isIndependent ? `${independentType === 'sub' ? 'Sub-category' : 'Product'} Name` : (modalMode === 'category' ? 'Category Name' : modalMode === 'sub' ? 'Sub-category Name' : 'Product Name')} <span className="wf-label__req"> *</span></label>
+          <input className="wf-input" value={formData.name} onChange={e => setFormData({ name: e.target.value })} placeholder="e.g. Complaint" autoFocus />
+        </div>
+      </Modal>
+
+      {/* MODAL 2: CONNECT UNLINKED ITEM */}
+      <Modal 
+        open={isLinkModalOpen} 
+        onClose={() => setIsLinkModalOpen(false)} 
+        title={`Connect "${editingItem?.name}"`}
+        footer={
+          <>
+            <button className="wf-btn wf-btn--secondary" onClick={() => setIsLinkModalOpen(false)} disabled={isLinking}>Cancel</button>
+            <button className="wf-btn wf-btn--primary" onClick={handleLinkSave} disabled={!selectedParentId || isLinking} style={{ background: '#D97706' }}>
+              {isLinking ? 'Connecting...' : <><LinkIcon size={16} style={{ marginRight: '6px' }}/> Connect</>}
+            </button>
+          </>
+        }
+      >
+        <div style={{ padding: '16px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', marginBottom: '20px' }}>
+          <div style={{ fontSize: '14px', color: '#92400E', marginBottom: '4px' }}>
+            <strong>Item Type:</strong> {editingItem?.isProduct ? 'Product' : 'Sub-category'}
+          </div>
+        </div>
+
+        <div className="wf-field">
+          <label className="wf-label">Select Parent <span className="wf-label__req">*</span></label>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <select 
+              className="wf-select" 
+              value={selectedParentId} 
+              onChange={(e) => setSelectedParentId(e.target.value)}
+              style={{ appearance: 'none', WebkitAppearance: 'none', paddingRight: '40px', width: '100%' }}
+            >
+              <option value="" disabled>-- Choose a {editingItem?.isProduct ? 'Sub-category' : 'Category'} --</option>
+              {editingItem?.isProduct ? 
+                getSubCategoryOptions().map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>) 
+                : 
+                getCategoryOptions().map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)
+              }
+            </select>
+            <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }}>
+              <ChevronDown size={18} />
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
