@@ -1,0 +1,309 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Plus, Edit, Loader2, Box, ChevronDown, Save, Unlink, AlertTriangle, Link as LinkIcon } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Modal from '../components/ui/Modal';
+import '../styles/workflow-module.css';
+
+const API_BASE_URL = 'https://localhost:7214/api/Lookup';
+const LOOKUP_LIST_ID = 1; // Set dynamically if needed
+
+export default function LookupItems() {
+  const [items, setItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingItem, setEditingItem] = useState(null); // Null means Add, otherwise Edit
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    parentItemId: '',
+    sortOrder: 0
+  });
+
+  // ── 1. GET API (Fetch Items) ──
+  const fetchItems = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/LookupItemGet?id=${LOOKUP_LIST_ID}`);
+      
+      if (response.data && response.data.isSuccess) {
+        setItems(response.data.data);
+      }
+    } catch (error) {
+      console.error("GET Error:", error);
+      toast.error('Failed to fetch items from API');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { 
+    fetchItems(); 
+  }, []); 
+
+  // ── Modal Handlers ──
+  const openAddModal = () => {
+    setEditingItem(null);
+    setFormData({ name: '', code: '', parentItemId: '', sortOrder: items.length + 1 });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (item) => {
+    setEditingItem(item);
+    setFormData({ 
+      name: item.name, 
+      code: item.code || '', 
+      parentItemId: item.parentItemId || '', 
+      sortOrder: item.sortOrder || 0 
+    });
+    setIsModalOpen(true);
+  };
+
+  // ── 2. POST API (Save/Update Item) ──
+  const handleSave = async () => {
+    if (!formData.name.trim()) return toast.error('Name is required');
+    setIsSaving(true);
+
+    // Auto-generate code if empty (if editing an nc_ item, keep the prefix logic if needed, but here we let backend handle or we just use name)
+    let finalCode = formData.code.trim();
+    if (!finalCode) {
+      finalCode = formData.name.toLowerCase().replace(/\s+/g, '_');
+    }
+
+    // Payload format exactly as per your Swagger screenshot
+    const apiPayload = {
+      lookupListId: LOOKUP_LIST_ID,
+      userId: 0, 
+      items: [
+        {
+          id: editingItem ? editingItem.id : 0, // 0 for new item
+          code: finalCode,
+          label: formData.name, // Backend expects 'label' here
+          parentItemId: formData.parentItemId ? Number(formData.parentItemId) : 0, // 0 for root
+          sortOrder: Number(formData.sortOrder) || 0,
+          attributesJson: "{}"
+        }
+      ]
+    };
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/LookupItemsSave`, apiPayload);
+      
+      if (response.data.isSuccess || response.status === 200) {
+        toast.success(editingItem ? 'Item updated!' : 'Item saved!');
+        setIsModalOpen(false);
+        fetchItems(); // Refresh list
+      }
+    } catch (error) {
+      console.error("POST Error:", error);
+      toast.error('Failed to save data to API');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Dropdown Change for Parent (Auto sort order)
+  const handleParentChange = (e) => {
+    const parentId = e.target.value;
+    let nextSortOrder = 1;
+    if (parentId) {
+       const siblings = items.filter(i => i.parentItemId === Number(parentId));
+       if(siblings.length > 0) nextSortOrder = Math.max(...siblings.map(s => s.sortOrder)) + 1;
+    } else {
+       const roots = items.filter(i => !i.parentItemId);
+       if(roots.length > 0) nextSortOrder = Math.max(...roots.map(s => s.sortOrder)) + 1;
+    }
+    
+    setFormData({ ...formData, parentItemId: parentId, sortOrder: nextSortOrder });
+  };
+
+  // Filter Items into Connected and Not Connected
+  const notConnectedItems = items.filter(item => item.code && item.code.startsWith('nc_'));
+  const connectedItems = items.filter(item => !item.code || !item.code.startsWith('nc_'));
+
+  if (isLoading) {
+    return (
+      <div className="wf-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <Loader2 className="animate-spin" size={32} color="var(--primary-red)" />
+        <span style={{ marginLeft: 10, fontWeight: 500 }}>Loading Data...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="wf-page">
+      {/* HEADER */}
+      <div className="wf-header">
+        <div>
+          <h1 className="wf-title">Lookup Items</h1>
+          <p className="wf-subtitle">Manage flat list of items and their parents</p>
+        </div>
+        <button className="wf-btn wf-btn--primary" onClick={openAddModal}>
+          <Plus size={16} /> Add New Item
+        </button>
+      </div>
+
+      {/* ⭐ SECTION 1: MAIN CONNECTED LIST (TABLE) ⭐ */}
+      <div className="wf-card" style={{ overflow: 'hidden', marginBottom: '24px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+            <tr>
+              <th style={{ padding: '16px 20px', fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Item Name</th>
+              <th style={{ padding: '16px 20px', fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Code</th>
+              <th style={{ padding: '16px 20px', fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Parent Name</th>
+              <th style={{ padding: '16px 20px', fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Sort Order</th>
+              <th style={{ padding: '16px 20px', fontSize: '13px', color: '#64748B', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {connectedItems.length === 0 ? (
+              <tr>
+                <td colSpan="5" style={{ padding: '30px', textAlign: 'center', color: '#94A3B8' }}>
+                  No items found. Click "Add New Item" to create one.
+                </td>
+              </tr>
+            ) : (
+              connectedItems.map(item => (
+                <tr key={item.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <td style={{ padding: '16px 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Box size={16} color={item.parentItemId ? "#94A3B8" : "var(--primary-red)"} />
+                      <span style={{ fontWeight: 500, color: '#0F172A' }}>{item.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748B' }}>
+                    {item.code || '-'}
+                  </td>
+                  <td style={{ padding: '16px 20px' }}>
+                    {item.parentName ? (
+                      <span style={{ background: '#E0F2FE', color: '#0369A1', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500 }}>
+                        {item.parentName}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#94A3B8', fontSize: '13px', fontStyle: 'italic' }}>Root Item (None)</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748B' }}>
+                    {item.sortOrder}
+                  </td>
+                  <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                    <button 
+                      className="wf-btn wf-btn--secondary" 
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                      onClick={() => openEditModal(item)}
+                    >
+                      <Edit size={14} style={{ marginRight: '4px' }} /> Edit
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ⭐ SECTION 2: NOT CONNECTED ITEMS (Red Theme) ⭐ */}
+      {notConnectedItems.length > 0 && (
+        <div className="wf-card" style={{ border: '1px solid #FCA5A5', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #FECACA', background: '#FEF2F2', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Unlink size={18} color="var(--primary-red)" />
+            <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#991B1B', margin: 0 }}>Not Connected Items</h2>
+          </div>
+          <div style={{ padding: '20px' }}>
+            {notConnectedItems.map(item => (
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#FFF1F2', border: '1px solid #FECACA', borderRadius: '8px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Box size={18} color="var(--primary-red)" />
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#991B1B' }}>{item.name}</div>
+                    <div style={{ fontSize: '12px', color: '#B91C1C' }}>Status: No Parent Assigned</div>
+                  </div>
+                </div>
+                <button 
+                  className="wf-btn wf-btn--secondary" 
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px', borderColor: 'var(--primary-red)', color: 'var(--primary-red)', background: '#FFF' }} 
+                  onClick={() => openEditModal(item)}
+                >
+                  <LinkIcon size={14} /> Connect
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ⭐ MODAL: ADD / EDIT ITEM ⭐ */}
+      <Modal 
+        open={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={editingItem ? `Edit Item: ${editingItem.name}` : 'Add New Item'}
+        footer={
+          <>
+            <button className="wf-btn wf-btn--secondary" onClick={() => setIsModalOpen(false)} disabled={isSaving}>Cancel</button>
+            <button className="wf-btn wf-btn--primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving...' : <><Save size={16} style={{ marginRight: '6px' }}/> Save Item</>}
+            </button>
+          </>
+        }
+      >
+        <div className="wf-field">
+          <label className="wf-label">Item Name <span className="wf-label__req"> *</span></label>
+          <input 
+            className="wf-input" 
+            value={formData.name} 
+            onChange={e => setFormData({ ...formData, name: e.target.value })} 
+            placeholder="e.g. Published" 
+            autoFocus 
+          />
+        </div>
+
+        <div className="wf-field">
+          <label className="wf-label">Code (Optional)</label>
+          <input 
+            className="wf-input" 
+            value={formData.code} 
+            onChange={e => setFormData({ ...formData, code: e.target.value })} 
+            placeholder="Auto-generated if blank" 
+          />
+        </div>
+
+        <div className="wf-field">
+          <label className="wf-label">Select Parent (Optional)</label>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <select 
+              className="wf-select" 
+              value={formData.parentItemId} 
+              onChange={handleParentChange}
+              style={{ appearance: 'none', WebkitAppearance: 'none', paddingRight: '40px', width: '100%' }}
+            >
+              <option value="">-- No Parent (Make it Root) --</option>
+              {items
+                .filter(i => !editingItem || i.id !== editingItem.id) // Don't select self as parent
+                .map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.name}</option>
+              ))}
+            </select>
+            <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }}>
+              <ChevronDown size={18} />
+            </div>
+          </div>
+        </div>
+
+        <div className="wf-field">
+          <label className="wf-label">Sort Order</label>
+          <input 
+            type="number"
+            className="wf-input" 
+            value={formData.sortOrder} 
+            onChange={e => setFormData({ ...formData, sortOrder: e.target.value })} 
+          />
+        </div>
+      </Modal>
+    </div>
+  );
+}
