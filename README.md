@@ -28,7 +28,7 @@ export default function Lookups() {
     sortOrder: 0
   });
 
-  // ── 1. GET API (Data Fetch & Sort & Tree Build) ──
+  // ── 1. GET API (Data Fetch, Sort & Tree Build) ──
   const fetchItems = async () => {
     try {
       setIsLoading(true);
@@ -37,8 +37,7 @@ export default function Lookups() {
       if (response.data && response.data.isSuccess) {
         const rawData = response.data.data;
         
-        // ⭐ SORTING LOGIC ⭐
-        // Data ko sortOrder ke hisaab se ascending order mein sort kar rahe hain
+        // 1. Sort by sortOrder
         const sortedData = [...rawData].sort((a, b) => {
           const orderA = Number(a.sortOrder) || 0;
           const orderB = Number(b.sortOrder) || 0;
@@ -47,7 +46,7 @@ export default function Lookups() {
 
         setItems(sortedData);
 
-        // Build Tree (Only 2 levels: Root and Child)
+        // 2. Build Tree (Only Root -> Child. No grand-children)
         const buildTree = (data, parentId = null) => {
           return data
             .filter(item => {
@@ -55,7 +54,7 @@ export default function Lookups() {
               return itemParentId === parentId;
             })
             .map(item => {
-              // Only build children for root items
+              // Only build children for root items. Children won't have further children.
               const children = parentId === null ? buildTree(data, item.id) : [];
               return { ...item, children: children };
             });
@@ -104,7 +103,7 @@ export default function Lookups() {
     setIsModalOpen(true);
   };
 
-  // ── 2. POST API (Save) ──
+  // ── 2. POST API (Save/Update) ──
   const handleSave = async () => {
     if (!formData.name.trim()) return toast.error('Name is required');
     setIsSaving(true);
@@ -153,60 +152,63 @@ export default function Lookups() {
     return treeData.map(node => ({ value: node.id, label: node.name }));
   };
 
-  // ⭐ RENDER TREE FUNCTION ⭐
+  // ⭐ RENDER TREE (Exact match to your image) ⭐
   const renderTree = (nodes, depth = 0) => {
     return nodes.map(node => {
       const isExpanded = expandedNodes.includes(node.id);
       const hasChildren = node.children && node.children.length > 0;
       
-      // Item can only have children if it's a Root node (depth 0)
+      // Sirf Root (depth 0) items ke child ban sakte hain
       const canHaveChildren = depth === 0; 
 
+      // Icons: Red Folder for Root, Grey Layers for Child
       const Icon = depth === 0 ? Folder : Layers;
       const iconColor = depth === 0 ? "var(--primary-red)" : "#64748B";
 
       return (
-        <div key={node.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
+        <div key={node.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
           <div 
             style={{ 
               display: 'flex', alignItems: 'center', padding: '16px 20px', 
-              paddingLeft: `${20 + depth * 30}px`, 
+              paddingLeft: `${20 + depth * 30}px`, // Indentation for children
               background: isExpanded ? '#F8FAFC' : '#fff', 
               cursor: hasChildren ? 'pointer' : 'default'
             }} 
             onClick={() => hasChildren && toggleNode(node.id)}
           >
+            {/* Chevron Arrow */}
             <div style={{ width: 24, color: '#64748B', display: 'flex', alignItems: 'center' }}>
               {hasChildren ? (isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />) : null}
             </div>
             
+            {/* Folder/Layers Icon */}
             <Icon size={18} color={iconColor} style={{ marginRight: 12 }} />
             
+            {/* Item Name */}
             <div style={{ flex: 1, fontWeight: depth === 0 ? 600 : 500, fontSize: 15, color: '#0F172A' }}>
               {node.name}
-              {/* Chota sa sort order number dikhane ke liye (Optional) */}
-              <span style={{ marginLeft: 10, fontSize: 11, color: '#94A3B8', fontWeight: 400 }}>
-                (#{node.sortOrder})
-              </span>
             </div>
             
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {/* Right Side Actions (Minimal look like image) */}
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              
+              {/* Edit Button */}
               <button 
                 className="wf-btn wf-btn--ghost" 
-                style={{ padding: '6px 12px', fontSize: 12, color: '#64748B', border: '1px solid #E2E8F0', background: '#FFF' }} 
+                style={{ padding: '4px 8px', fontSize: 13, color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }} 
                 onClick={(e) => { e.stopPropagation(); openEditModal(node); }}
               >
-                <Edit size={14} style={{ marginRight: '4px' }} /> Edit
+                <Edit size={14} /> Edit
               </button>
               
-              {/* Show Add Child ONLY for Root nodes */}
+              {/* Add Child Button (Only for Root items) */}
               {canHaveChildren && (
                 <button 
-                  className="wf-btn wf-btn--secondary" 
-                  style={{ padding: '6px 12px', fontSize: 12 }} 
+                  className="wf-btn wf-btn--ghost" 
+                  style={{ padding: '4px 8px', fontSize: 13, color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }} 
                   onClick={(e) => { e.stopPropagation(); openAddModal(node); }}
                 >
-                  <Plus size={14} style={{ marginRight: '4px' }} /> Add Child
+                  <Plus size={14} /> Add
                 </button>
               )}
             </div>
@@ -226,7 +228,6 @@ export default function Lookups() {
   if (isLoading) return (
     <div className="wf-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
       <Loader2 className="animate-spin" size={32} color="var(--primary-red)" />
-      <span style={{ marginLeft: 10 }}>Loading Data...</span>
     </div>
   );
 
@@ -239,6 +240,7 @@ export default function Lookups() {
           <p className="wf-subtitle">Manage hierarchy</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
+          {/* Ek button Add New Item ka (optional, agar aap chahein) */}
           <button className="wf-btn wf-btn--secondary" onClick={() => openAddModal(null)}>
             <Plus size={16} /> Add New Item
           </button>
@@ -248,13 +250,16 @@ export default function Lookups() {
         </div>
       </div>
 
-      {/* TREE VIEW */}
-      <div className="wf-card" style={{ overflow: 'hidden', marginBottom: '24px' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1E293B', margin: 0 }}>Active Lookups</h2>
+      {/* MAIN TREE CARD */}
+      <div className="wf-card" style={{ overflow: 'hidden', marginBottom: '24px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        
+        {/* Card Header */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0' }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#334155', margin: 0 }}>Active Lookups</h2>
         </div>
         
-        <div style={{ padding: '0 0 20px 0' }}>
+        {/* List Items */}
+        <div>
            {treeData.length === 0 ? (
              <div style={{ padding: '30px', textAlign: 'center', color: '#64748B' }}>No lookups found. Add one to get started.</div>
            ) : renderTree(treeData, 0)}
@@ -265,7 +270,7 @@ export default function Lookups() {
       <Modal 
         open={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={editingItem ? `Edit Item: ${editingItem.name}` : 'Add New Item'}
+        title={editingItem ? `Edit Item: ${editingItem.name}` : (activeParent ? `Add to "${activeParent.name}"` : 'Add Root Lookup')}
         footer={
           <>
             <button className="wf-btn wf-btn--secondary" onClick={() => setIsModalOpen(false)} disabled={isSaving}>Cancel</button>
@@ -295,6 +300,7 @@ export default function Lookups() {
               style={{ appearance: 'none', WebkitAppearance: 'none', paddingRight: '40px', width: '100%' }}
             >
               <option value="">-- No Parent (Root Level) --</option>
+              {/* Dropdown mein sirf Root items aayenge */}
               {getDropdownOptions().filter(opt => !editingItem || opt.value !== editingItem.id).map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
