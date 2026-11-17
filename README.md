@@ -1,3 +1,466 @@
+/* ═══════════════════════════════════════════════════════════════
+   ROLE PERMISSIONS PAGE - RED THEME
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Fallback theme colors (Agar aapke global CSS mein define nahi hain) */
+  --primary-red: #e11d48; /* Crimson Red */
+  --primary-red-hover: #be123c;
+  --primary-red-bg: rgba(225, 29, 72, 0.08);
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+}
+
+/* ── Page Layout ── */
+.role-perm-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin-top: 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LEFT SIDEBAR (Role List)
+   ═══════════════════════════════════════════════════════════════ */
+.role-list-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Naya Role add karne ka button */
+.role-list-sidebar > button:first-child {
+  background: var(--card-bg);
+  border: 1px dashed var(--primary-red);
+  color: var(--primary-red);
+  font-weight: 600;
+  transition: all 0.2s ease;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.role-list-sidebar > button:first-child:hover {
+  background: var(--primary-red-bg);
+  border-style: solid;
+  transform: translateY(-1px);
+}
+
+/* Role Card */
+.role-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.role-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Active Role Card */
+.role-card.active {
+  border-color: var(--primary-red);
+  background: var(--primary-red-bg);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.1);
+}
+
+.role-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.role-card.active .role-icon-box {
+  background: var(--primary-red);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3);
+}
+
+.role-info {
+  flex: 1;
+}
+
+.role-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.role-card.active .role-name {
+  color: var(--primary-red);
+}
+
+.role-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RIGHT PANEL (Permissions)
+   ═══════════════════════════════════════════════════════════════ */
+.perm-panel {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+/* Panel Header */
+.perm-panel-header {
+  padding: 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(to right, #ffffff, #f8fafc);
+}
+
+.perm-panel-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.perm-shield-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--primary-red-bg);
+  color: var(--primary-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.perm-role-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.perm-role-desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.perm-count-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.perm-count-badge .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-red);
+  box-shadow: 0 0 0 3px var(--primary-red-bg);
+}
+
+/* ── Groups Container ── */
+.perm-groups-container {
+  padding: 24px;
+  background: var(--bg-color);
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+}
+
+.perm-group {
+  margin-bottom: 32px;
+}
+
+.perm-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Group Header */
+.perm-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.perm-group-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.perm-category-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+}
+
+.perm-group-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.perm-toggle-all-btn {
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.perm-toggle-all-btn:hover {
+  background: #e2e8f0;
+  color: var(--text-main);
+}
+
+.perm-toggle-all-btn.active {
+  color: var(--primary-red);
+}
+
+/* ── Grid Layout for Permissions ── */
+.perm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* ── Individual Permission Card ── */
+.perm-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.perm-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.perm-card.enabled {
+  border-color: var(--primary-red);
+  background: #fffafb;
+  box-shadow: 0 2px 10px rgba(225, 29, 72, 0.05);
+}
+
+.perm-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.perm-card.enabled .perm-icon-box {
+  background: var(--primary-red-bg);
+  color: var(--primary-red);
+}
+
+.perm-text {
+  flex: 1;
+}
+
+.perm-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.perm-card.enabled .perm-label {
+  color: var(--primary-red);
+}
+
+.perm-description {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Custom Toggle Switch ── */
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  background: #e2e8f0;
+  border-radius: 12px;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  padding: 0;
+  margin-top: 6px;
+}
+
+.toggle-switch.enabled {
+  background: var(--primary-red);
+}
+
+.toggle-dot {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.enabled .toggle-dot {
+  transform: translateX(20px);
+}
+
+/* ── Sticky Footer ── */
+.perm-footer {
+  padding: 16px 24px;
+  background: #fff;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.perm-footer-text {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MODAL & ANT DESIGN CUSTOMIZATION
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Antd Modal Header */
+.ant-modal-header {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.ant-modal-title {
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  color: var(--text-main) !important;
+}
+
+/* Antd Checkbox Customization (Red Theme) */
+.ant-checkbox-wrapper {
+  transition: all 0.2s;
+}
+
+.ant-checkbox-wrapper:hover .ant-checkbox-inner {
+  border-color: var(--primary-red) !important;
+}
+
+.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--primary-red) !important;
+  border-color: var(--primary-red) !important;
+}
+
+.ant-checkbox-checked::after {
+  border-color: var(--primary-red) !important;
+}
+
+/* Scrollbar customization for groups container */
+.perm-groups-container::-webkit-scrollbar,
+.ant-modal-body > div > div::-webkit-scrollbar {
+  width: 6px;
+}
+
+.perm-groups-container::-webkit-scrollbar-track,
+.ant-modal-body > div > div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.perm-groups-container::-webkit-scrollbar-thumb,
+.ant-modal-body > div > div::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.perm-groups-container::-webkit-scrollbar-thumb:hover,
+.ant-modal-body > div > div::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ── Responsive Design ── */
+@media (max-width: 1024px) {
+  .perm-grid {
+    grid-template-columns: 1fr; /* 1 column on smaller screens */
+  }
+}
+
+@media (max-width: 768px) {
+  .role-perm-layout {
+    flex-direction: column;
+  }
+  
+  .role-list-sidebar {
+    width: 100%;
+  }
+  
+  .perm-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+
+
+
+
+
+
 // Saari available permissions ki list
 export const ALL_PERMISSIONS = [
   { key: 'dashboard', label: 'Dashboard' },
