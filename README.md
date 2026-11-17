@@ -1,3 +1,311 @@
+import React, { useState, useEffect } from 'react';
+import { App, Skeleton, Button, Form, ConfigProvider } from 'antd'; 
+import { PlusOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+
+import './BusinessCalendar.css';
+import { WORKING_DAYS_OPTIONS } from './mockData'; // INITIAL_CALENDARS ki zaroorat nahi rahi
+import SidebarList from './SidebarList';
+import WorkingHoursPanel from './WorkingHoursPanel';
+import MonthGrid from './MonthGrid';
+import { AddHolidayModal, NewCalendarModal } from './CalendarModals';
+
+// APIs import karein
+import { getCalendars, getHolidays, saveBusinessCalendar, saveHoliday } from './calendarApi';
+
+export default function BusinessCalendar() {
+  const { message } = App.useApp();
+  const [form] = Form.useForm();
+  
+  const [calendars, setCalendars] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isAddHolidayOpen, setIsAddHolidayOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [month, setMonth] = useState(dayjs());
+
+  const formValues = Form.useWatch([], form);
+
+  // 👇 1. GET API: Initial Load par data fetch karein
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    try {
+      setIsLoading(true);
+      // GET API 1: Saare calendars laayein
+      const data = await getCalendars();
+      
+      // Agar backend se data aa jaye toh state set karein
+      // Note: Backend ka data structure aapke UI structure se match karna chahiye
+      if (data && data.length > 0) {
+        setCalendars(data);
+        setSelectedId(data[0].id);
+        
+        // Pehle calendar ki holidays fetch karein
+        await fetchHolidaysForCalendar(data[0].id);
+      }
+    } catch (error) {
+      message.error('Failed to load calendars from server');
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchHolidaysForCalendar = async (calendarId) => {
+    try {
+      // GET API 2: Selected calendar ki holidays laayein
+      const holidays = await getHolidays(calendarId);
+      setCalendars(prev => prev.map(c => 
+        c.id === calendarId ? { ...c, holidays: holidays } : c
+      ));
+    } catch (error) {
+      console.error("Error fetching holidays", error);
+    }
+  };
+
+  // Jab sidebar se dusra calendar select ho
+  const handleCalendarSelect = async (id) => {
+    setSelectedId(id);
+    // Har dafa select karne par holidays fetch karein
+    await fetchHolidaysForCalendar(id);
+  };
+
+  const calendar = calendars.find(c => c.id === selectedId);
+  const activeWorkingDays = WORKING_DAYS_OPTIONS.find(o => o.code === calendar?.workingDays)?.days || [];
+
+  if (isLoading) {
+    return (
+      <div className="calendar-page">
+        <div className="page-heading">
+          <h1 className="page-title">Business calendar</h1>
+          <span className="page-desc">Loading calendars...</span>
+        </div>
+        <Skeleton active paragraph={{ rows: 10 }} />
+      </div>
+    );
+  }
+
+  if (!calendar) {
+    return <div style={{ padding: 40, textAlign: 'center' }}>No calendars found. Please create one.</div>;
+  }
+
+  // 👇 2. POST API: Add Holiday
+  const handleAddHoliday = async (values) => {
+    try {
+      setIsSaving(true);
+      
+      // Backend ke mutabiq payload banayein (Image 1)
+      const payload = {
+        id: 0,
+        calendarId: selectedId,
+        userId: 1, // Apne auth context se real User ID dalein
+        holidayDate: values.date.toISOString(), // "2026-11-17T12:11:29.602Z" format
+        name: values.name
+      };
+
+      await saveHoliday(payload);
+      
+      // API success ke baad UI update karein
+      await fetchHolidaysForCalendar(selectedId);
+      
+      message.success('Holiday saved successfully');
+      setIsAddHolidayOpen(false);
+      setMonth(values.date);
+    } catch (error) {
+      message.error('Failed to save holiday');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Holiday Remove (Backend API delete nahi maangi hai, isliye abhi frontend se remove kar rahe hain)
+  const handleRemoveHoliday = (holidayToRemove) => {
+    message.warning('Delete API not integrated yet');
+  };
+
+  // 👇 3. POST API: Create/Update Calendar
+  const handleCreateCalendar = async (values) => {
+    try {
+      setIsSaving(true);
+      
+      // Backend ke mutabiq payload (Image 2)
+      const payload = {
+        id: 0, // 0 for new, ya agar update hai toh calendar.id
+        name: values.name,
+        timeZone: "Asia/Karachi",
+        daysId: 1, // 1 = Mon-Fri (Aapko backend mapping ke mutabiq set karna hoga)
+        workStart: "09:00",
+        workEnd: "17:00",
+        isDefault: false,
+        userId: 1
+      };
+
+      await saveBusinessCalendar(payload);
+      
+      // Naya data fetch karein
+      await fetchInitialData();
+      
+      message.success('Calendar created successfully');
+      setIsNewModalOpen(false);
+    } catch (error) {
+      message.error('Failed to create calendar');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 👇 4. POST API: Save Working Hours (Update)
+  const handleSaveWorkingHours = async () => {
+    try {
+      const values = form.getFieldsValue();
+      setIsSaving(true);
+
+      const payload = {
+        id: calendar.id, // Update hone par ID bhejna zaroori hai
+        name: calendar.name,
+        timeZone: calendar.timeZone,
+        daysId: values.workingDays === 'mon-fri' ? 1 : 2, // Example mapping
+        workStart: values.dayStart,
+        workEnd: values.dayEnd,
+        isDefault: calendar.isDefault || false,
+        userId: 1
+      };
+
+      await saveBusinessCalendar(payload);
+      await fetchInitialData(); // Refresh data
+      
+      message.success('Working hours saved');
+      form.resetFields();
+    } catch (error) {
+      message.error('Failed to save working hours');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const isDirty = formValues && (
+    formValues.dayStart !== calendar.dayStart || 
+    formValues.dayEnd !== calendar.dayEnd || 
+    formValues.workingDays !== calendar.workingDays ||
+    formValues.ramadanHours !== calendar.ramadanHours
+  );
+
+  return (
+    <ConfigProvider
+      theme={{
+        token: { colorPrimary: '#dc2626', colorLink: '#dc2626' },
+      }}
+    >
+      <div className="calendar-page">
+        <div className="stack">
+          {/* HEADING */}
+          <div className="page-heading">
+            <h1 className="page-title">Business calendar</h1>
+            <span className="page-desc">Working days, hours and holidays used for every SLA and due date.</span>
+          </div>
+          
+          <div className="split-layout">
+            {/* SIDEBAR */}
+            <div className="split-side">
+              <SidebarList
+                title="Calendars"
+                actionText="New"
+                onAction={() => setIsNewModalOpen(true)}
+                items={calendars.map((c) => ({ key: c.id, title: c.name, detail: c.usedBy || 'Project' }))}
+                value={calendar.id}
+                onChange={handleCalendarSelect} // API call wala function pass kiya
+              />
+            </div>
+
+            {/* MAIN CONTENT */}
+            <div className="split-main">
+              <div className="calendar-header-row">
+                <h2 className="calendar-title">{calendar.name}</h2>
+                <span className="chip">Time zone: {calendar.timeZone}</span>
+                {calendar.canEdit !== false ? (
+                  <div className="calendar-actions">
+                    <Button onClick={() => message.info('Import feature simulated')}>Import holidays</Button>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => { setSelectedDate(null); setIsAddHolidayOpen(true); }}>Add holiday</Button>
+                  </div>
+                ) : (
+                  <span className="read-only-text">Read only: this calendar belongs to another project.</span>
+                )}
+              </div>
+
+              <WorkingHoursPanel 
+                calendar={calendar} 
+                workingDaysOptions={WORKING_DAYS_OPTIONS} 
+                isDirty={isDirty}
+                onSave={handleSaveWorkingHours}
+                onCancel={() => form.resetFields()}
+                form={form}
+              />
+
+              <div className="panel">
+                <div className="panel-header">Holidays <span className="panel-header-num" style={{ backgroundColor: '#dc2626', color: 'white', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' }}>{calendar.holidays?.length || 0}</span></div>
+                <div className="panel-body">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div className="month-nav">
+                      <Button type="link" onClick={() => setMonth(month.subtract(1, 'month'))} style={{ fontWeight: 600 }}>Previous</Button>
+                      <span className="month-title">{month.format('MMMM YYYY')}</span>
+                      <Button type="link" onClick={() => setMonth(month.add(1, 'month'))} style={{ fontWeight: 600 }}>Next</Button>
+                    </div>
+                    <MonthGrid
+                      month={month}
+                      workingDays={activeWorkingDays}
+                      dayStart={calendar.dayStart || calendar.workStart || '09:00'}
+                      dayEnd={calendar.dayEnd || calendar.workEnd || '17:00'}
+                      holidays={calendar.holidays || []}
+                      onPick={(date) => { setSelectedDate(date); setIsAddHolidayOpen(true); }}
+                      onRemove={handleRemoveHoliday}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="note-box">
+                SLA clocks count only working time on this calendar. Due dates move when a holiday is added, and the change is logged.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MODALS */}
+        <AddHolidayModal 
+          open={isAddHolidayOpen} 
+          onCancel={() => setIsAddHolidayOpen(false)} 
+          onFinish={handleAddHoliday} 
+          calendarName={calendar.name}
+          initialDate={selectedDate}
+          confirmLoading={isSaving} // Button par loading spinner dikhane ke liye
+        />
+        
+        <NewCalendarModal 
+          open={isNewModalOpen} 
+          onCancel={() => setIsNewModalOpen(false)} 
+          onFinish={handleCreateCalendar} 
+          confirmLoading={isSaving}
+        />
+      </div>
+    </ConfigProvider>
+  );
+}
+
+
+
+
+
+
+
+
+
+
 /* ═══════════════════════════════════════════════════════════════
    ROLE PERMISSIONS PAGE - RED THEME
    ═══════════════════════════════════════════════════════════════ */
