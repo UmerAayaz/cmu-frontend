@@ -29,27 +29,104 @@ export default function Sidebar({ userRole }) {
   ];
 
   // ── Project Menu Map ──
+ 
+  // ── Project-specific terminology ──
+  const caseWord = project?.caseWord || 'Case';
+  const pluralWord = project?.pluralWord || 'Cases';
+  const teamWord = project?.teamWord || 'Team';
+
+  // ── Project Menu Map ──
   const allProjectItemsMap = {
-    dashboard:      { name: 'Dashboard',       path: `${base}/dashboard`,      icon: <Layout size={18} /> },
-    forms:          { name: 'Forms',           path: `${base}/forms`,          icon: <FileText size={18} /> },
-    workflows:      { name: 'Workflows',       path: `${base}/workflows`,      icon: <GitBranch size={18} /> },
-    fieldLibrary:   { name: 'Field Library',   path: `${base}/forms/library`,  icon: <Library size={18} /> },
-    teamSetup:      { name: 'Team Setup',      path: `${base}/team-setup`,     icon: <Users size={18} /> },
-    myTasks:        { name: 'My Tasks',        path: `${base}/my-tasks`,       icon: <ListChecks size={18} /> },
-    myCases:        { name: 'My Cases',        path: `${base}/my-cases`,       icon: <Briefcase size={18} /> },
-    caseQueue:      { name: 'Case Queue',      path: `${base}/case-queue`,     icon: <Activity size={18} /> },
-    publishQueue:   { name: 'Publish Queue',   path: `${base}/publish-queue`,  icon: <Send size={18} /> },
-    lodgeComplaint: { name: 'Lodge Complaint', path: `${base}/lodge-complaint`,icon: <FileText size={18} /> },
-    complaintSetup: { name: 'Complaint Setup', path: `${base}/complaint-setup`,icon: <Settings size={18} /> },
-    lookups:        { name: 'Lookups',         path: `${base}/lookups`,        icon: <Tag size={18} /> },
-    myTeam:         { name: 'My Team',         path: `${base}/my-team`,        icon: <Users size={18} /> },
-    reportBuilder:  { name: 'Report Builder',  path: `${base}/report-builder`, icon: <Layout size={18} /> },
-    reports:        { name: 'Reports',         path: `${base}/reports`,        icon: <BarChart2 size={18} /> },
-    notifications:  { name: 'Notifications',   path: `${base}/notifications`,  icon: <Bell size={18} /> },
-    rcaSetup:       { name: 'RCA Setup',       path: `${base}/rca-setup`,      icon: <Info size={18} /> },
-    
-    // 👇 NAYA MENU ITEM ADD KAR DIYA GAYA HAI 👇
-    businessCalendar: { name: 'Business Calendar', path: `${base}/business-calendar`, icon: <Calendar size={18} /> },
+    dashboard: {
+      name: 'Dashboard',
+      path: `${base}/dashboard`,
+      icon: <Layout size={18} />,
+    },
+    forms: {
+      name: 'Forms',
+      path: `${base}/forms`,
+      icon: <FileText size={18} />,
+    },
+    workflows: {
+      name: 'Workflows',
+      path: `${base}/workflows`,
+      icon: <GitBranch size={18} />,
+    },
+    fieldLibrary: {
+      name: 'Field Library',
+      path: `${base}/forms/library`,
+      icon: <Library size={18} />,
+    },
+    teamSetup: {
+      name: `${teamWord} Setup`,
+      path: `${base}/team-setup`,
+      icon: <Users size={18} />,
+    },
+    myTasks: {
+      name: 'My Tasks',
+      path: `${base}/my-tasks`,
+      icon: <ListChecks size={18} />,
+    },
+    myCases: {
+      name: `My ${pluralWord}`,
+      path: `${base}/my-cases`,
+      icon: <Briefcase size={18} />,
+    },
+    caseQueue: {
+      name: `${caseWord} Queue`,
+      path: `${base}/case-queue`,
+      icon: <Activity size={18} />,
+    },
+    publishQueue: {
+      name: 'Publish Queue',
+      path: `${base}/publish-queue`,
+      icon: <Send size={18} />,
+    },
+    lodgeComplaint: {
+      name: `Lodge ${caseWord}`,
+      path: `${base}/lodge-complaint`,
+      icon: <FileText size={18} />,
+    },
+    complaintSetup: {
+      name: `${caseWord} Setup`,
+      path: `${base}/complaint-setup`,
+      icon: <Settings size={18} />,
+    },
+    lookups: {
+      name: 'Lookups',
+      path: `${base}/lookups`,
+      icon: <Tag size={18} />,
+    },
+    myTeam: {
+      name: `My ${teamWord}`,
+      path: `${base}/my-team`,
+      icon: <Users size={18} />,
+    },
+    reportBuilder: {
+      name: 'Report Builder',
+      path: `${base}/report-builder`,
+      icon: <Layout size={18} />,
+    },
+    reports: {
+      name: 'Reports',
+      path: `${base}/reports`,
+      icon: <BarChart2 size={18} />,
+    },
+    notifications: {
+      name: 'Notifications',
+      path: `${base}/notifications`,
+      icon: <Bell size={18} />,
+    },
+    rcaSetup: {
+      name: 'RCA Setup',
+      path: `${base}/rca-setup`,
+      icon: <Info size={18} />,
+    },
+    businessCalendar: {
+      name: 'Business Calendar',
+      path: `${base}/business-calendar`,
+      icon: <Calendar size={18} />,
+    },
   };
 
   let projectMenuItems = [];

@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { App as AntApp } from 'antd'; // 👈 AntApp import kiya
+import { App as AntApp } from 'antd';
 
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
 import ProjectsListPage from './pages/ProjectsListPage';
-import CreateProjectWizard from './pages/CreateProjectWizard';
 import ProjectDashboard from './pages/ProjectDashboard';
 import RolePermissions from './pages/RolePermission/RolePermission';
+
+// 👇 1. Purana CreateProjectWizard hata kar naya OnboardProject import kiya
+import OnboardProject from './pages/OnboardProject/OnboardProject';
 
 import FormsListPage from './pages/eform/FormsListPage';
 import FormBuilderPage from './pages/eform/FormBuilderPage';
@@ -32,7 +34,6 @@ import MyCases from './pages/MyCases';
 import MyTeam from './pages/MyTeam';
 import Lookups from './pages/Lookups';
 
-// 👇 Business Calendar Import
 import BusinessCalendar from './pages/BusinessCalendar/BusinessCalendar';
 
 import { projectsApi } from './api/projects.api';
@@ -82,7 +83,7 @@ export default function App() {
   const currentTheme = activeProject?.theme || 'red';
 
   return (
-    <AntApp> {/* 👈 AntApp wrapper lagaya */}
+    <AntApp>
       <BrowserRouter>
         <div className="app-shell" data-project-theme={currentTheme}>
           <Sidebar userRole={userRole} />
@@ -92,7 +93,9 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/projects" replace />} />
                 <Route path="/projects" element={<ProjectsListPage userRole={userRole} />} />
-                <Route path="/projects/create" element={canCreateProject ? <CreateProjectWizard /> : <Navigate to="/projects" replace />} />
+                
+                {/* 👇 2. Yahan route mein OnboardProject call kiya */}
+                <Route path="/projects/create" element={canCreateProject ? <OnboardProject /> : <Navigate to="/projects" replace />} />
 
                 <Route path="/projects/:id" element={<ProjectLayout />}>
                   <Route index element={<Navigate to="dashboard" replace />} />
@@ -122,7 +125,6 @@ export default function App() {
                   <Route path="rca-setup" element={<RCASetup />} />
                   <Route path="lookups" element={<Lookups />} />
                   
-                  {/* 👇 Business Calendar Route */}
                   <Route path="business-calendar" element={<BusinessCalendar />} />
                 </Route>
 
