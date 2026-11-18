@@ -1,304 +1,316 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Plus, ChevronDown, ChevronRight, Folder, Layers, Loader2, Edit, Save, Box } from 'lucide-react';
-import toast from 'react-hot-toast';
-import Modal from '../components/ui/Modal';
-import '../styles/workflow-module.css';
+import React, { useState, useEffect } from 'react';
+import { App, Skeleton, Button, Form, ConfigProvider } from 'antd'; 
+import { PlusOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 
-const API_BASE_URL = 'https://localhost:7214/api/Lookup';
-const LOOKUP_LIST_ID = 1; 
+import './BusinessCalendar.css';
+import { WORKING_DAYS_OPTIONS } from './mockData'; 
+import SidebarList from './SidebarList';
+import WorkingHoursPanel from './WorkingHoursPanel';
+import MonthGrid from './MonthGrid';
+import { AddHolidayModal, NewCalendarModal } from './CalendarModals';
 
-export default function Lookups() {
-  const [allItems, setAllItems] = useState([]); // Flat list ke liye
-  const [treeData, setTreeData] = useState([]); // Tree view ke liye
+import { getCalendars, getHolidays, saveBusinessCalendar, saveHoliday } from './calendarApi';
+
+export default function BusinessCalendar() {
+  const { message } = App.useApp();
+  const [form] = Form.useForm();
+  
+  const [calendars, setCalendars] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedNodes, setExpandedNodes] = useState([]); 
-
-  // Modal States
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editingItem, setEditingItem] = useState(null); 
-  const [activeParent, setActiveParent] = useState(null); 
 
-  // Form State
-  const [formData, setFormData] = useState({
-    name: '', code: '', parentItemId: '', sortOrder: 0
-  });
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isAddHolidayOpen, setIsAddHolidayOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [month, setMonth] = useState(dayjs());
 
-  // ── 1. GET API ──
-  const fetchItems = async () => {
+  const formValues = Form.useWatch([], form);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/LookupItemGet?id=${LOOKUP_LIST_ID}`);
+      const [calendarsData, holidaysData] = await Promise.all([
+        getCalendars(),
+        getHolidays()
+      ]);
+
+      const holidaysByCalendar = {};
+      holidaysData.forEach(h => {
+        if (!holidaysByCalendar[h.calendarId]) holidaysByCalendar[h.calendarId] = [];
+        const formattedDate = h.holidayDate ? h.holidayDate.split('T')[0] : ''; 
+        if (formattedDate) {
+          holidaysByCalendar[h.calendarId].push({
+            id: h.id,
+            date: formattedDate,
+            name: h.name
+          });
+        }
+      });
+
+      const formattedCalendars = calendarsData.map(c => {
+        let workingDays = 'mon-fri';
+        if (c.daysId === 2) workingDays = 'mon-sat';
+        
+        return {
+          ...c,
+          workingDays: workingDays,
+          dayStart: c.workStart ? c.workStart.substring(0, 5) : '09:00',
+          dayEnd: c.workEnd ? c.workEnd.substring(0, 5) : '17:00',
+          holidays: holidaysByCalendar[c.id] || [],
+          canEdit: true,
+          usedBy: c.isDefault ? 'Default Calendar' : 'Project Calendar'
+        };
+      });
+
+      setCalendars(formattedCalendars);
       
-      if (response.data && response.data.isSuccess) {
-        const rawData = response.data.data;
-
-        // 1. Sort by sortOrder
-        const sortedData = [...rawData].sort((a, b) => {
-          return (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0);
-        });
-
-        // Flat List ke liye save karein
-        setAllItems(sortedData);
-
-        // 2. Build Tree (Only Root -> Child)
-        const roots = sortedData.filter(item => !item.parentItemId || item.parentItemId === 0);
-        const structuredData = roots.map(root => {
-          const children = sortedData.filter(item => item.parentItemId === root.id);
-          return { ...root, children: children };
-        });
-
-        setTreeData(structuredData);
+      if (formattedCalendars.length > 0) {
+        setSelectedId(prev => prev && formattedCalendars.find(c => c.id === prev) ? prev : formattedCalendars[0].id);
+      } else {
+        setSelectedId(null);
       }
+
     } catch (error) {
-      console.error("GET Error:", error);
-      toast.error('Failed to fetch data');
+      console.error(error);
+      message.error('Failed to load data from server');
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => { fetchItems(); }, []); 
+  const calendar = calendars.find(c => c.id === selectedId);
+  const activeWorkingDays = WORKING_DAYS_OPTIONS.find(o => o.code === calendar?.workingDays)?.days || [];
 
-  const toggleNode = (id) => {
-    setExpandedNodes(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
-
-  // ── Modal Handlers ──
-  const openAddRootModal = () => {
-    setEditingItem(null);
-    setActiveParent(null);
-    setFormData({ name: '', code: '', parentItemId: '', sortOrder: treeData.length + 1 });
-    setIsModalOpen(true);
-  };
-
-  const openAddChildModal = (parent) => {
-    setEditingItem(null);
-    setActiveParent(parent);
-    setFormData({ 
-      name: '', code: '', parentItemId: parent.id, sortOrder: (parent.children?.length || 0) + 1 
-    });
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (item) => {
-    setEditingItem(item);
-    setActiveParent(null);
-    setFormData({ 
-      name: item.name, code: item.code || '', parentItemId: item.parentItemId || '', sortOrder: item.sortOrder || 0 
-    });
-    setIsModalOpen(true);
-  };
-
-  // ── 2. POST API ──
-  const handleSave = async () => {
-    if (!formData.name.trim()) return toast.error('Name is required');
-    setIsSaving(true);
-
-    let finalCode = formData.code.trim() || formData.name.toLowerCase().replace(/\s+/g, '_');
-
-    const apiPayload = {
-      lookupListId: LOOKUP_LIST_ID,
-      userId: 0, 
-      items: [{
-        id: editingItem ? editingItem.id : 0, 
-        code: finalCode,
-        label: formData.name, 
-        parentItemId: formData.parentItemId ? Number(formData.parentItemId) : 0, 
-        sortOrder: Number(formData.sortOrder) || 0,
-        attributesJson: "{}"
-      }]
-    };
-
+  const handleCreateCalendar = async (values) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/LookupItemsSave`, apiPayload);
-      if (response.data.isSuccess || response.status === 200) {
-        toast.success('Saved successfully!');
-        setIsModalOpen(false);
-        fetchItems(); 
-        
-        if (!editingItem && activeParent && !expandedNodes.includes(activeParent.id)) {
-          setExpandedNodes(prev => [...prev, activeParent.id]);
-        }
-      }
+      setIsSaving(true);
+      const payload = {
+        id: 0, 
+        name: values.name,
+        timeZone: "Asia/Karachi",
+        daysId: 1, 
+        workStart: "09:00:00", 
+        workEnd: "17:00:00",
+        isDefault: false,
+        userId: 1 
+      };
+      await saveBusinessCalendar(payload);
+      await fetchData(); 
+      message.success('Calendar created successfully');
+      setIsNewModalOpen(false);
     } catch (error) {
-      console.error("POST Error:", error);
-      toast.error('Failed to save data');
+      message.error('Failed to create calendar');
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (isLoading) return (
-    <div className="wf-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-      <Loader2 className="animate-spin" size={32} color="var(--primary-red)" />
-    </div>
+  const handleAddHoliday = async (values) => {
+    try {
+      setIsSaving(true);
+      const payload = {
+        id: 0,
+        calendarId: selectedId,
+        userId: 1, 
+        holidayDate: values.date.toISOString(), 
+        name: values.name
+      };
+      await saveHoliday(payload);
+      await fetchData(); 
+      message.success('Holiday saved successfully');
+      setIsAddHolidayOpen(false);
+      setMonth(values.date);
+    } catch (error) {
+      message.error('Failed to save holiday');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveWorkingHours = async () => {
+    try {
+      const values = form.getFieldsValue();
+      setIsSaving(true);
+      const payload = {
+        id: calendar.id,
+        name: calendar.name,
+        timeZone: calendar.timeZone,
+        daysId: values.workingDays === 'mon-fri' ? 1 : 2, 
+        workStart: values.dayStart ? `${values.dayStart}:00` : calendar.workStart,
+        workEnd: values.dayEnd ? `${values.dayEnd}:00` : calendar.workEnd,
+        isDefault: calendar.isDefault || false,
+        userId: 1
+      };
+      await saveBusinessCalendar(payload);
+      await fetchData(); 
+      message.success('Working hours saved successfully');
+      form.resetFields();
+    } catch (error) {
+      message.error('Failed to save working hours');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const isDirty = formValues && (
+    formValues.dayStart !== calendar?.dayStart || 
+    formValues.dayEnd !== calendar?.dayEnd || 
+    formValues.workingDays !== calendar?.workingDays 
   );
 
+  if (isLoading) {
+    return (
+      <div className="calendar-page">
+        <div className="page-heading">
+          <h1 className="page-title">Business calendar</h1>
+          <span className="page-desc">Loading from server...</span>
+        </div>
+        <Skeleton active paragraph={{ rows: 10 }} />
+      </div>
+    );
+  }
+
   return (
-    <div className="wf-page">
-      {/* HEADER */}
-      <div className="wf-header">
-        <div>
-          <h1 className="wf-title">Lookups Management</h1>
-          <p className="wf-subtitle">Manage hierarchy and items</p>
-        </div>
-        <button className="wf-btn wf-btn--primary" onClick={openAddRootModal}>
-          <Plus size={16} /> Add Root Lookup
-        </button>
-      </div>
+    <ConfigProvider theme={{ token: { colorPrimary: '#dc2626', colorLink: '#dc2626' } }}>
+      <div className="calendar-page">
+        <div className="stack">
+          
+          <div className="page-heading">
+            <h1 className="page-title">Business calendar</h1>
+            <span className="page-desc">Working days, hours and holidays used for every SLA and due date.</span>
+          </div>
+          
+          <div className="split-layout">
+            
+            {/* SIDEBAR */}
+            <div className="split-side">
+              <SidebarList
+                title="Calendars"
+                actionText="New"
+                onAction={() => setIsNewModalOpen(true)}
+                items={calendars.map((c) => ({ key: c.id, title: c.name, detail: c.usedBy }))}
+                value={calendar?.id}
+                onChange={setSelectedId}
+              />
+            </div>
 
-      {/* ⭐ 1. TREE VIEW ⭐ */}
-      <div className="wf-card" style={{ overflow: 'hidden', marginBottom: '24px' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#334155', margin: 0 }}>Active Lookups</h2>
-        </div>
-        
-        <div style={{ paddingBottom: '10px' }}>
-           {treeData.length === 0 ? (
-             <div style={{ padding: '30px', textAlign: 'center', color: '#64748B' }}>No lookups found.</div>
-           ) : (
-             treeData.map((root) => {
-               const isExpanded = expandedNodes.includes(root.id);
-               const hasChildren = root.children && root.children.length > 0;
-
-               return (
-                 <div key={root.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                   <div style={{ display: 'flex', alignItems: 'center', padding: '14px 20px', cursor: hasChildren ? 'pointer' : 'default' }} onClick={() => hasChildren && toggleNode(root.id)}>
-                     <div style={{ width: 24, color: '#64748B', display: 'flex', alignItems: 'center' }}>
-                       {hasChildren ? (isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />) : null}
-                     </div>
-                     <Folder size={18} color="var(--primary-red)" style={{ marginRight: 12 }} />
-                     <div style={{ flex: 1, fontWeight: 600, fontSize: 15, color: '#0F172A' }}>{root.name}</div>
-                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                       <button className="wf-btn wf-btn--ghost" style={{ padding: '4px 8px', fontSize: 13, color: '#64748B' }} onClick={(e) => { e.stopPropagation(); openEditModal(root); }}>
-                         <Edit size={14} style={{ marginRight: 4 }} /> Edit
-                       </button>
-                       <button className="wf-btn wf-btn--ghost" style={{ padding: '4px 8px', fontSize: 13, color: '#64748B' }} onClick={(e) => { e.stopPropagation(); openAddChildModal(root); }}>
-                         <Plus size={14} style={{ marginRight: 4 }} /> Add
-                       </button>
-                     </div>
-                   </div>
-
-                   {isExpanded && hasChildren && (
-                     <div style={{ background: '#F8FAFC' }}>
-                       {root.children.map(child => (
-                         <div key={child.id} style={{ display: 'flex', alignItems: 'center', padding: '12px 20px 12px 56px', borderTop: '1px solid #F1F5F9' }}>
-                           <Layers size={16} color="#64748B" style={{ marginRight: 12 }} />
-                           <div style={{ flex: 1, fontWeight: 500, fontSize: 14, color: '#334155' }}>{child.name}</div>
-                           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                             <button className="wf-btn wf-btn--ghost" style={{ padding: '4px 8px', fontSize: 13, color: '#64748B' }} onClick={() => openEditModal(child)}>
-                               <Edit size={14} style={{ marginRight: 4 }} /> Edit
-                             </button>
-                           </div>
-                         </div>
-                       ))}
-                     </div>
-                   )}
-                 </div>
-               );
-             })
-           )}
-        </div>
-      </div>
-
-      {/* ⭐ 2. ALL ITEMS LIST (Flat Table) ⭐ */}
-      <div className="wf-card" style={{ overflow: 'hidden', marginBottom: '24px' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#334155', margin: 0 }}>Item List</h2>
-        </div>
-        
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-            <tr>
-              <th style={{ padding: '12px 20px', fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Item Name</th>
-              <th style={{ padding: '12px 20px', fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Parent Name</th>
-              <th style={{ padding: '12px 20px', fontSize: '13px', color: '#64748B', fontWeight: 600 }}>Sort Order</th>
-              <th style={{ padding: '12px 20px', fontSize: '13px', color: '#64748B', fontWeight: 600, textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {allItems.map(item => (
-              <tr key={item.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                <td style={{ padding: '12px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    {item.parentItemId ? <Box size={16} color="#94A3B8" /> : <Folder size={16} color="var(--primary-red)" />}
-                    <span style={{ fontWeight: 500, color: '#0F172A', fontSize: '14px' }}>{item.name}</span>
+            {/* MAIN CONTENT */}
+            <div className="split-main">
+              
+              {!calendar ? (
+                <div style={{ padding: '40px', textAlign: 'center', background: '#fafafa', border: '1px dashed #d9d9d9', borderRadius: 8, color: '#888' }}>
+                  <p style={{ fontSize: 16 }}>No calendars available.</p>
+                  <p>Click on the <b>"+ New"</b> button on the left to create one.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="calendar-header-row">
+                    <h2 className="calendar-title">{calendar.name}</h2>
+                    <span className="chip">Time zone: {calendar.timeZone}</span>
+                    {calendar.canEdit ? (
+                      <div className="calendar-actions">
+                        <Button onClick={() => message.info('Import feature simulated')}>Import holidays</Button>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setSelectedDate(null); setIsAddHolidayOpen(true); }}>Add holiday</Button>
+                      </div>
+                    ) : (
+                      <span className="read-only-text">Read only: this calendar belongs to another project.</span>
+                    )}
                   </div>
-                </td>
-                <td style={{ padding: '12px 20px' }}>
-                  {item.parentName ? (
-                    <span style={{ background: '#E0F2FE', color: '#0369A1', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 500 }}>
-                      {item.parentName}
-                    </span>
-                  ) : (
-                    <span style={{ color: '#94A3B8', fontSize: '13px', fontStyle: 'italic' }}>Root Item (None)</span>
-                  )}
-                </td>
-                <td style={{ padding: '12px 20px', fontSize: '13px', color: '#64748B' }}>{item.sortOrder}</td>
-                <td style={{ padding: '12px 20px', textAlign: 'right' }}>
-                  <button className="wf-btn wf-btn--secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => openEditModal(item)}>
-                    <Edit size={14} style={{ marginRight: '4px' }} /> Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
 
-      {/* MODAL */}
-      <Modal 
-        open={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title={editingItem ? 'Edit Item' : (activeParent ? `Add to "${activeParent.name}"` : 'Add Root Lookup')}
-        footer={
-          <>
-            <button className="wf-btn wf-btn--secondary" onClick={() => setIsModalOpen(false)} disabled={isSaving}>Cancel</button>
-            <button className="wf-btn wf-btn--primary" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? 'Saving...' : <><Save size={16} style={{ marginRight: '6px' }}/> Save</>}
-            </button>
-          </>
-        }
-      >
-        <div className="wf-field">
-          <label className="wf-label">Name <span className="wf-label__req"> *</span></label>
-          <input className="wf-input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Sub Category" autoFocus />
-        </div>
+                  <WorkingHoursPanel 
+                    calendar={calendar} 
+                    workingDaysOptions={WORKING_DAYS_OPTIONS} 
+                    isDirty={isDirty}
+                    onSave={handleSaveWorkingHours}
+                    onCancel={() => form.resetFields()}
+                    form={form}
+                  />
 
-        <div className="wf-field">
-          <label className="wf-label">Code (Optional)</label>
-          <input className="wf-input" value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} placeholder="Auto-generated if blank" />
-        </div>
+                  <div className="panel">
+                    <div className="panel-header">
+                      Holidays 
+                      <span className="panel-header-num" style={{ backgroundColor: '#dc2626', color: 'white', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' }}>
+                        {calendar.holidays?.length || 0}
+                      </span>
+                    </div>
+                    <div className="panel-body">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <div className="month-nav">
+                          <Button type="link" onClick={() => setMonth(month.subtract(1, 'month'))} style={{ fontWeight: 600 }}>Previous</Button>
+                          <span className="month-title">{month.format('MMMM YYYY')}</span>
+                          <Button type="link" onClick={() => setMonth(month.add(1, 'month'))} style={{ fontWeight: 600 }}>Next</Button>
+                        </div>
+                        <MonthGrid
+                          month={month}
+                          workingDays={activeWorkingDays}
+                          dayStart={calendar.dayStart}
+                          dayEnd={calendar.dayEnd}
+                          holidays={calendar.holidays || []}
+                          onPick={calendar.canEdit ? (date) => { setSelectedDate(date); setIsAddHolidayOpen(true); } : undefined}
+                          onRemove={() => message.warning('Delete API not integrated yet')}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-        <div className="wf-field">
-          <label className="wf-label">Select Parent (Optional)</label>
-          <div style={{ position: 'relative', width: '100%' }}>
-            <select 
-              className="wf-select" 
-              value={formData.parentItemId} 
-              onChange={(e) => setFormData({ ...formData, parentItemId: e.target.value })}
-              style={{ appearance: 'none', WebkitAppearance: 'none', paddingRight: '40px', width: '100%' }}
-            >
-              <option value="">-- No Parent (Make it Root) --</option>
-              {treeData.map(node => (
-                <option key={node.id} value={node.id} disabled={editingItem && node.id === editingItem.id}>
-                  {node.name}
-                </option>
-              ))}
-            </select>
-            <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }}>
-              <ChevronDown size={18} />
+                  <div className="note-box">
+                    SLA clocks count only working time on this calendar. Due dates move when a holiday is added, and the change is logged.
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="wf-field">
-          <label className="wf-label">Sort Order</label>
-          <input type="number" className="wf-input" value={formData.sortOrder} onChange={e => setFormData({ ...formData, sortOrder: e.target.value })} />
-        </div>
-      </Modal>
-    </div>
+        <NewCalendarModal 
+          open={isNewModalOpen} 
+          onCancel={() => setIsNewModalOpen(false)} 
+          onFinish={handleCreateCalendar} 
+          confirmLoading={isSaving}
+        />
+
+        {calendar && (
+          <AddHolidayModal 
+            open={isAddHolidayOpen} 
+            onCancel={() => setIsAddHolidayOpen(false)} 
+            onFinish={handleAddHoliday} 
+            calendarName={calendar.name}
+            initialDate={selectedDate}
+            confirmLoading={isSaving}
+          />
+        )}
+      </div>
+    </ConfigProvider>
   );
 }
+
+
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:7213/api/BusinessCalendar'; 
+
+export const getCalendars = async () => {
+  const response = await axios.get(`${API_BASE_URL}/BusinessCalendarGet`); 
+  return response.data?.data || []; 
+};
+
+export const getHolidays = async () => {
+  const response = await axios.get(`${API_BASE_URL}/HolidayGet`);
+  return response.data?.data || []; 
+};
+
+export const saveBusinessCalendar = async (data) => {
+  const response = await axios.post(`${API_BASE_URL}/BusinessCalendarSave`, data);
+  return response.data;
+};
+
+export const saveHoliday = async (data) => {
+  const response = await axios.post(`${API_BASE_URL}/HolidaySave`, data);
+  return response.data;
+};
