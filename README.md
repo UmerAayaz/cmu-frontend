@@ -1,3 +1,42 @@
+// src/pages/BusinessCalendar/calendarApi.js
+import axios from 'axios';
+
+// Apna backend URL yahan dalein (Swagger ke mutabiq)
+const API_BASE_URL = 'http://localhost:7213/api/BusinessCalendar'; 
+
+// 1. GET: Saare Calendars laane ke liye
+export const getCalendars = async () => {
+  const response = await axios.get(`${API_BASE_URL}/GetAll`); 
+  return response.data;
+};
+
+// 2. GET: Kisi ek Calendar ke Holidays laane ke liye
+export const getHolidays = async (calendarId) => {
+  const response = await axios.get(`${API_BASE_URL}/Holidays/${calendarId}`);
+  return response.data;
+};
+
+// 3. POST: Naya Calendar Save karne ke liye
+export const saveBusinessCalendar = async (data) => {
+  const response = await axios.post(`${API_BASE_URL}/BusinessCalendarSave`, data);
+  return response.data;
+};
+
+// 4. POST: Naya Holiday Save karne ke liye
+export const saveHoliday = async (data) => {
+  const response = await axios.post(`${API_BASE_URL}/HolidaySave`, data);
+  return response.data;
+};
+
+
+
+
+
+
+
+
+
+
 import React, { useState, useEffect } from 'react';
 import { App, Skeleton, Button, Form, ConfigProvider } from 'antd'; 
 import { PlusOutlined } from '@ant-design/icons';
